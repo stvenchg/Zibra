@@ -285,3 +285,96 @@ h3 {
     align-self: flex-end;
   }
 }
+
+.connect-button {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.connect-button:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.connect-button.connecting {
+  background-color: var(--text-secondary);
+  cursor: not-allowed;
+  position: relative;
+  overflow: hidden;
+}
+
+.connect-button.connecting::after {
+  content: "";
+  position: absolute;
+  width: 30%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  left: -30%;
+  top: 0;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    left: -30%;
+  }
+  100% {
+    left: 130%;
+  }
+}
+
+/* État connecté */
+.device-item.connected {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+}
+
+.status-indicator.online {
+  background-color: var(--success-color);
+}
+
+.status-indicator.offline {
+  background-color: var(--text-secondary);
+}
+
+.status-indicator.connecting {
+  background-color: var(--primary-color);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+.transfer-button {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  background-color: var(--success-color);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.transfer-button:hover {
+  background-color: #0ea371; /* Version plus foncée du vert */
+}

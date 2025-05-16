@@ -4,7 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>Zibra - Partage de fichiers en réseau local</title>
+    <script>
+      // Polyfills pour simple-peer - DOIVENT être définis avant tout autre script
+      window.global = window;
+      window.process = window.process || { env: {} };
+      window.process.nextTick = function(fn) {
+        setTimeout(function() { fn(); }, 0);
+      };
+      window.process.browser = true;
+    </script>
   </head>
   <body>
     <div id="root"></div>
