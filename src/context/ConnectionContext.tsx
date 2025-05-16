@@ -329,6 +329,55 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Add a cleanup function for duplicate files
+  const cleanupDuplicateFiles = useCallback(() => {
+    setIncomingFiles(prev => {
+      // Regrouper les fichiers par ID
+      const filesById = new Map();
+      
+      // Analyser tous les fichiers
+      for (const file of prev) {
+        // Si ce fichier existe déjà, fusionner les propriétés
+        if (filesById.has(file.id)) {
+          const existingFile = filesById.get(file.id);
+          
+          // Prendre les propriétés non vides du nouveau fichier
+          const mergedFile = {
+            ...existingFile,
+            // Prendre la taille du fichier non-nulle
+            size: file.size || existingFile.size,
+            // Prendre le nom de l'expéditeur s'il est connu
+            from: file.from !== 'unknown' ? file.from : existingFile.from,
+            // Garder les chunks existants
+            chunks: existingFile.chunks.length > file.chunks.length ? 
+                   existingFile.chunks : file.chunks,
+            // Garder la taille reçue la plus grande
+            receivedSize: Math.max(existingFile.receivedSize, file.receivedSize),
+            // Garder le statut completed si l'un des deux est completed
+            status: existingFile.status === 'completed' || file.status === 'completed' ?
+                   'completed' : existingFile.status
+          };
+          
+          filesById.set(file.id, mergedFile);
+        } else {
+          filesById.set(file.id, file);
+        }
+      }
+      
+      // Convertir la map en tableau
+      return Array.from(filesById.values());
+    });
+  }, []);
+  
+  // Appliquer le nettoyage périodiquement
+  useEffect(() => {
+    const interval = setInterval(() => {
+      cleanupDuplicateFiles();
+    }, 2000); // Nettoyer toutes les 2 secondes
+    
+    return () => clearInterval(interval);
+  }, [cleanupDuplicateFiles]);
+
   // Handle incoming data
   const handleIncomingData = (data: any) => {
     try {
@@ -353,36 +402,44 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
             console.log('New incoming file:', newFile.name, 'size:', newFile.size);
             
             // Vérifier si le fichier existe déjà (cas où file-chunk est arrivé avant file-info)
-            setIncomingFiles(prev => {
-              const fileIndex = prev.findIndex(f => f.id === message.id);
-              if (fileIndex !== -1) {
-                console.log('File entry already exists, updating metadata');
-                // Preserve existing chunks and sizes, but update metadata
-                const existingFile = prev[fileIndex];
-                const updatedFile = { 
-                  ...newFile, 
-                  chunks: existingFile.chunks,
-                  receivedSize: existingFile.receivedSize,
-                  progress: existingFile.progress
-                };
-                
-                const updatedFiles = [...prev];
-                updatedFiles[fileIndex] = updatedFile;
-                
-                // Apply any pending chunks after updating metadata
-                setTimeout(() => applyPendingChunks(message.id), 0);
-                
-                return updatedFiles;
-              }
+            const fileExists = incomingFiles.some(f => f.id === message.id);
+            
+            if (fileExists) {
+              console.log('File entry already exists, updating metadata');
+              setIncomingFiles(prev => {
+                return prev.map(f => {
+                  if (f.id === message.id) {
+                    // Conserver les chunks et la taille reçue mais mettre à jour les métadonnées
+                    return { 
+                      ...newFile, 
+                      chunks: f.chunks,
+                      receivedSize: f.receivedSize,
+                      progress: f.size ? Math.min(100, Math.floor((f.receivedSize / f.size) * 100)) : f.progress
+                    };
+                  }
+                  return f;
+                });
+              });
               
-              // It's a new file, remove from recently created set
+              // Nettoyer les fichiers dupliqués juste après
+              setTimeout(() => cleanupDuplicateFiles(), 100);
+              
+              // Apply any pending chunks after updating metadata
+              setTimeout(() => applyPendingChunks(message.id), 200);
+            } else {
+              // It's a new file
+              console.log('Adding new file:', newFile.name);
+              setIncomingFiles(prev => [...prev, newFile]);
+              
+              // Remove from recently created set
               recentlyCreatedFilesRef.current.delete(message.id);
               
               // Apply any pending chunks after adding the file
-              setTimeout(() => applyPendingChunks(message.id), 0);
+              setTimeout(() => applyPendingChunks(message.id), 200);
               
-              return [...prev, newFile];
-            });
+              // Cleanup duplicates afterwards
+              setTimeout(() => cleanupDuplicateFiles(), 500);
+            }
             break;
           }
           
@@ -430,6 +487,9 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
                 }
                 return file;
               }));
+              
+            // Vérifier et nettoyer les fichiers dupliqués
+            setTimeout(() => cleanupDuplicateFiles(), 500);
             break;
           }
           

@@ -3,7 +3,13 @@ import { useConnection } from '../hooks/useConnection';
 export const ReceivedFiles = () => {
   const { incomingFiles, downloadFile } = useConnection();
   
-  if (incomingFiles.length === 0) {
+  // Filtrer les fichiers en ne gardant que les fichiers avec des données valides
+  const validFiles = incomingFiles.filter(file => {
+    // Garder les fichiers qui ont une taille et des chunks, ou qui sont marqués comme complétés
+    return (file.receivedSize > 0 && file.chunks.length > 0) || file.status === 'completed';
+  });
+  
+  if (validFiles.length === 0) {
     return null;
   }
   
@@ -17,11 +23,11 @@ export const ReceivedFiles = () => {
     <div className="received-files-container">
       <h2>Received Files</h2>
       <ul className="received-files-list">
-        {incomingFiles.map(file => (
-          <li key={file.id} className={`received-file status-${file.status}`}>
+        {validFiles.map((file, index) => (
+          <li key={`${file.id}-${index}`} className={`received-file status-${file.status}`}>
             <div className="file-info">
               <span className="file-name">{file.name}</span>
-              <span className="file-size">{formatSize(file.size)}</span>
+              <span className="file-size">{formatSize(file.size || file.receivedSize)}</span>
               <span className="file-source">From: {file.from}</span>
             </div>
             
