@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useConnection } from '../hooks/useConnection';
 import { FileTransfer } from '../components/FileTransfer';
 import { TransferList } from '../components/TransferList';
+import { ReceivedFiles } from '../components/ReceivedFiles';
 
 export const TransferPage = () => {
   const { deviceId } = useParams<{ deviceId: string }>();
@@ -31,6 +32,7 @@ export const TransferPage = () => {
       
       <FileTransfer targetDeviceId={deviceId} />
       <TransferList />
+      <ReceivedFiles />
     </div>
   );
 }; 

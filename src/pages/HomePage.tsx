@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useConnection } from '../hooks/useConnection';
 import { DeviceList } from '../components/DeviceList';
 import { TransferList } from '../components/TransferList';
+import { ReceivedFiles } from '../components/ReceivedFiles';
 
 export const HomePage = () => {
   const { deviceName, setDeviceName, deviceId } = useConnection();
@@ -59,6 +60,7 @@ export const HomePage = () => {
       
       <DeviceList />
       <TransferList />
+      <ReceivedFiles />
     </div>
   );
 }; 

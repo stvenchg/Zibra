@@ -378,3 +378,76 @@ h3 {
 .transfer-button:hover {
   background-color: #0ea371; /* Version plus foncée du vert */
 }
+
+/* Received Files Styles */
+.received-files-container {
+  background-color: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  margin-top: 2rem;
+}
+
+.received-files-list {
+  list-style: none;
+}
+
+.received-file {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.received-file:last-child {
+  border-bottom: none;
+}
+
+.received-file .file-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.received-file .file-name {
+  font-weight: 500;
+  flex: 2;
+  word-break: break-all;
+}
+
+.received-file .file-size {
+  flex: 1;
+  text-align: right;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.received-file .file-source {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.download-button {
+  background-color: var(--success-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  align-self: flex-end;
+}
+
+.download-button:hover {
+  background-color: #0ea371;
+}
+
+.status-failed {
+  color: var(--error-color);
+  align-self: flex-end;
+}
