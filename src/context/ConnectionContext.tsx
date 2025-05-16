@@ -140,6 +140,26 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
+  // Process pending chunks more frequently
+  useEffect(() => {
+    // Vérifier et traiter les chunks en attente toutes les 200ms
+    const processPendingChunksInterval = setInterval(() => {
+      const fileIds = Object.keys(pendingChunksRef.current);
+      
+      for (const fileId of fileIds) {
+        if (pendingChunksRef.current[fileId] && 
+            Array.isArray(pendingChunksRef.current[fileId]) && 
+            pendingChunksRef.current[fileId].length > 0) {
+          
+          console.log(`Traitement automatique de ${pendingChunksRef.current[fileId].length} chunks en attente pour ${fileId}`);
+          applyPendingChunks(fileId);
+        }
+      }
+    }, 200);
+    
+    return () => clearInterval(processPendingChunksInterval);
+  }, [applyPendingChunks]);
+
   // Initialize Socket.IO connection
   useEffect(() => {
     const socketIo = io(SIGNALING_SERVER_URL);
@@ -591,6 +611,30 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
+  // Mise à jour périodique des fichiers en réception
+  useEffect(() => {
+    // Mettre à jour visuellement la progression toutes les 500ms
+    const updateInterval = setInterval(() => {
+      // Ne mettre à jour que les fichiers en cours de réception
+      setIncomingFiles(prev => 
+        prev.map(file => {
+          if (file.status === 'receiving') {
+            return { 
+              ...file,
+              // Recalculer la progression pour s'assurer qu'elle est à jour
+              progress: file.size > 0 ? 
+                Math.min(100, Math.floor((file.receivedSize / file.size) * 100)) : 
+                file.progress
+            };
+          }
+          return file;
+        })
+      );
+    }, 500);
+    
+    return () => clearInterval(updateInterval);
+  }, []);
+
   // Function to download a completed file
   const downloadFile = (fileId: string) => {
     try {
