@@ -34,7 +34,7 @@ export const HomePage = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-muted/50 p-4 rounded-lg">
-            <h3 className="font-medium mb-2">Mon appareil</h3>
+            <h3 className="font-medium mb-2">Vous apparaissez en tant que</h3>
             {editingName ? (
               <div className="flex items-center gap-2">
                 <Input
@@ -66,9 +66,7 @@ export const HomePage = () => {
       
       <FileSelection />
       
-      {selectedFiles.length > 0 && (
-        <DeviceList />
-      )}
+      <DeviceList />
       
       <TransferList />
       <ReceivedFiles />

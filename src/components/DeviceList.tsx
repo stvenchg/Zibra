@@ -89,7 +89,7 @@ export const DeviceList = () => {
           <CardTitle className="text-xl">Appareils disponibles</CardTitle>
         </CardHeader>
         <CardContent className="text-center py-8">
-          <p className="text-muted-foreground">Aucun appareil détecté sur le réseau.</p>
+          <p className="text-muted-foreground">Aucun appareil trouvé</p>
           <p className="text-muted-foreground text-sm mt-1">Les appareils connectés au même réseau apparaîtront automatiquement ici.</p>
         </CardContent>
       </Card>
