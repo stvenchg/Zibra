@@ -332,6 +332,27 @@ h3 {
   background-color: rgba(16, 185, 129, 0.1);
 }
 
+.device-item.connecting {
+  background-color: rgba(79, 70, 229, 0.05);
+}
+
+.device-item.disconnected {
+  background-color: transparent;
+}
+
+.connection-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.connection-status {
+  font-size: 0.85rem;
+  color: var(--primary-color);
+  font-style: italic;
+}
+
 .status-indicator {
   display: inline-block;
   width: 10px;
@@ -340,11 +361,11 @@ h3 {
   margin-right: 0.5rem;
 }
 
-.status-indicator.online {
+.status-indicator.connected {
   background-color: var(--success-color);
 }
 
-.status-indicator.offline {
+.status-indicator.disconnected {
   background-color: var(--text-secondary);
 }
 
@@ -356,12 +377,15 @@ h3 {
 @keyframes pulse {
   0% {
     opacity: 0.5;
+    transform: scale(0.8);
   }
   50% {
     opacity: 1;
+    transform: scale(1.2);
   }
   100% {
     opacity: 0.5;
+    transform: scale(0.8);
   }
 }
 

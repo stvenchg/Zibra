@@ -15,19 +15,36 @@ export class WebRTCConnection extends EventEmitter {
     super();
     this.isInitiator = initiator;
     
-    // Default config with public STUN servers
+    // Configuration améliorée avec plus de serveurs STUN/TURN publics fiables
     const defaultConfig: RTCConfiguration = {
       iceServers: config.iceServers || [
+        // Serveurs STUN Google
         { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+        
+        // Serveurs STUN Twilio
         { urls: 'stun:global.stun.twilio.com:3478' },
-        // Add some TURN servers for better NAT traversal
+        
+        // Serveurs TURN publics (à remplacer idéalement par vos propres serveurs TURN)
         {
           urls: 'turn:numb.viagenie.ca',
           username: 'webrtc@live.com',
           credential: 'muazkh'
+        },
+        {
+          urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
+          username: 'webrtc',
+          credential: 'webrtc'
         }
       ],
-      iceCandidatePoolSize: 10
+      iceCandidatePoolSize: 10,
+      // Options supplémentaires pour améliorer la connectivité
+      iceTransportPolicy: 'all',
+      bundlePolicy: 'max-bundle',
+      rtcpMuxPolicy: 'require'
     };
     
     console.log('Creating WebRTC connection with config:', defaultConfig);
@@ -75,6 +92,11 @@ export class WebRTCConnection extends EventEmitter {
                 this.connection.iceConnectionState === 'closed') {
         this.connected = false;
         this.emit('close');
+        
+        // Émettre une erreur spécifique en cas d'échec de la connexion ICE
+        if (this.connection.iceConnectionState === 'failed') {
+          this.emit('error', new Error('ICE connection failed'));
+        }
       }
     };
 
@@ -95,7 +117,17 @@ export class WebRTCConnection extends EventEmitter {
                 this.connection.connectionState === 'closed') {
         this.connected = false;
         this.emit('close');
+        
+        // Émettre une erreur spécifique en cas d'échec de connexion
+        if (this.connection.connectionState === 'failed') {
+          this.emit('error', new Error('Connection failed'));
+        }
       }
+    };
+    
+    // Debug: surveiller les négociations nécessaires
+    this.connection.onnegotiationneeded = () => {
+      console.log('Negotiation needed');
     };
   }
   
@@ -103,7 +135,9 @@ export class WebRTCConnection extends EventEmitter {
     try {
       console.log('Creating data channel');
       this.dataChannel = this.connection.createDataChannel('fileTransfer', {
-        ordered: true
+        ordered: true,
+        // Ajouter des options pour améliorer la fiabilité
+        maxRetransmits: 30
       });
       this.setupDataChannel(this.dataChannel);
     } catch (error) {
@@ -150,7 +184,12 @@ export class WebRTCConnection extends EventEmitter {
     
     try {
       console.log('Creating offer');
-      const offer = await this.connection.createOffer();
+      const offer = await this.connection.createOffer({
+        // Options pour améliorer la compatibilité et la stabilité
+        offerToReceiveAudio: false,
+        offerToReceiveVideo: false,
+        iceRestart: false
+      });
       console.log('Offer created, setting local description');
       await this.connection.setLocalDescription(offer);
       
@@ -184,6 +223,11 @@ export class WebRTCConnection extends EventEmitter {
       // Handle offer or answer
       if (data.type === 'offer' || data.type === 'answer') {
         console.log(`Received ${data.type}`);
+        
+        // Ajouter un délai avant de définir la description distante
+        // Cela peut aider avec certaines implémentations qui ont des problèmes de timing
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         await this.connection.setRemoteDescription(new RTCSessionDescription(data));
         console.log('Remote description set');
         
