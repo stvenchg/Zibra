@@ -6,6 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Zibra - Partage de fichiers en réseau local</title>
     <script>
+      // Initialisation du thème
+      (function() {
+        const storedTheme = localStorage.getItem('theme');
+        const isDark = storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+          // Forcer le retrait du thème sombre
+          document.documentElement.className = document.documentElement.className.replace(/\bdark\b/g, '');
+        }
+        
+        // Afficher le thème actuel dans la console pour débogage
+        console.log('Thème actuel:', isDark ? 'sombre' : 'clair');
+        console.log('Classes HTML:', document.documentElement.className);
+      })();
+      
       // Polyfills pour simple-peer - DOIVENT être définis avant tout autre script
       window.global = window;
       window.process = window.process || { env: {} };

@@ -23,15 +23,24 @@ export const ReceivedFiles = () => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
   };
+
+  // Format date - using current date as placeholder since we don't have a timestamp yet
+  const formatDate = (): string => {
+    const date = new Date();
+    return date.toLocaleString('fr-FR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
   
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">Fichiers reçus</CardTitle>
-      </CardHeader>
       <CardContent>
         <ul className="space-y-3">
-          {validFiles.map((file, index) => (
+          {[...validFiles].reverse().map((file, index) => (
             <li key={`${file.id}-${index}`} className="p-3 bg-muted/30 rounded-md">
               <div className="flex justify-between items-start mb-2">
                 <div>
@@ -39,7 +48,10 @@ export const ReceivedFiles = () => {
                   <div className="text-sm text-muted-foreground">
                     {formatSize(file.size || file.receivedSize)}
                   </div>
-                  <div className="text-xs mt-1">De: {file.from}</div>
+                  <div className="text-xs mt-1 flex flex-col gap-0.5">
+                    <div><span className="font-medium">De:</span> {file.from}</div>
+                    <div><span className="font-medium">Reçu le:</span> {formatDate()}</div>
+                  </div>
                 </div>
                 
                 {file.status === 'completed' && (

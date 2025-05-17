@@ -146,7 +146,7 @@ io.on('connection', (socket) => {
 
 // Basic routes
 app.get('/', (req, res) => {
-  res.send('Zibra Server Online');
+  res.send('Zibra Signaling Server is up and running.');
 });
 
 // Debugging route for connected devices

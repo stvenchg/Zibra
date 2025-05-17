@@ -31,12 +31,9 @@ export const TransferList = () => {
   
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">Transferts actifs</CardTitle>
-      </CardHeader>
       <CardContent>
         <ul className="space-y-3">
-          {fileTransfers.map(transfer => (
+          {[...fileTransfers].reverse().map(transfer => (
             <li key={transfer.id} className="p-3 bg-muted/30 rounded-md">
               <div className="flex justify-between items-start mb-2">
                 <div>

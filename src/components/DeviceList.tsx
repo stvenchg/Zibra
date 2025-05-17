@@ -1,11 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useConnection } from '../hooks/useConnection';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from './ui/toast';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { DeviceAvatar } from './DeviceAvatar';
+import { Loader2, Share2, RefreshCw } from 'lucide-react';
 
 export const DeviceList = () => {
   const { availableDevices, connectToDevice, isConnectedTo, selectedFiles, sendFiles } = useConnection();
+  const { addToast } = useToast();
   const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState<Record<string, number>>({});
   
@@ -15,7 +18,12 @@ export const DeviceList = () => {
     console.log('Envoi de fichiers vers l\'appareil:', deviceId);
     
     if (selectedFiles.length === 0) {
-      alert('Veuillez sélectionner au moins un fichier à transférer.');
+      addToast({
+        type: 'warning',
+        title: 'Aucun fichier sélectionné',
+        description: 'Veuillez sélectionner au moins un fichier à transférer.',
+        duration: 5000
+      });
       return;
     }
     
@@ -37,14 +45,34 @@ export const DeviceList = () => {
     } catch (error: unknown) {
       console.error('Échec de l\'envoi des fichiers:', error);
       setConnectingDeviceId(null);
+      
+      addToast({
+        type: 'error',
+        title: 'Échec de connexion',
+        description: 'Impossible d\'établir la connexion avec l\'appareil.',
+        duration: 5000
+      });
     }
     
     // Add a timeout to reset the "connecting" state
     // if the connection doesn't establish within 20 seconds
     setTimeout(() => {
-      setConnectingDeviceId(prev => prev === deviceId ? null : prev);
+      setConnectingDeviceId(prev => {
+        if (prev === deviceId) {
+          if (!isConnectedTo(deviceId)) {
+            addToast({
+              type: 'error',
+              title: 'Délai d\'attente dépassé',
+              description: 'La connexion a pris trop de temps. Veuillez réessayer.',
+              duration: 5000
+            });
+          }
+          return null;
+        }
+        return prev;
+      });
     }, 20000);
-  }, [connectToDevice, selectedFiles, sendFiles]);
+  }, [connectToDevice, selectedFiles, sendFiles, addToast, isConnectedTo]);
   
   // Determine the connection status of a device
   const getConnectionStatus = useCallback((deviceId: string) => {
@@ -62,7 +90,7 @@ export const DeviceList = () => {
       case 'connected':
         return 'Envoyer les fichiers';
       case 'connecting':
-        return attempts > 1 ? `Connexion (Essai ${attempts})...` : 'Connexion...';
+        return 'Connexion...';
       default:
         return attempts > 0 ? 'Réessayer' : 'Envoyer les fichiers';
     }
@@ -78,7 +106,7 @@ export const DeviceList = () => {
       case 'connecting':
         return 'outline';
       default:
-        return 'secondary';
+        return 'default';
     }
   }, [getConnectionStatus]);
   
@@ -87,10 +115,22 @@ export const DeviceList = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Appareils disponibles</CardTitle>
+          <CardDescription>Aucun appareil trouvé sur votre réseau</CardDescription>
         </CardHeader>
-        <CardContent className="text-center py-8">
+        <CardContent className="text-center py-8 space-y-4">
+          <div className="flex justify-center">
+            <div className="p-4 rounded-full bg-muted/50">
+              <Share2 className="h-10 w-10 text-muted-foreground" />
+            </div>
+          </div>
           <p className="text-muted-foreground">Aucun appareil trouvé</p>
-          <p className="text-muted-foreground text-sm mt-1">Les appareils connectés au même réseau apparaîtront automatiquement ici.</p>
+          <p className="text-sm text-muted-foreground flex items-center gap-1 justify-center">
+            <span>Les appareils connectés au même réseau apparaîtront automatiquement ici.</span>
+          </p>
+          <div className="flex items-center gap-2 justify-center text-xs text-muted-foreground mt-4">
+            <RefreshCw className="h-3 w-3 animate-spin" />
+            <span>Recherche en cours...</span>
+          </div>
         </CardContent>
       </Card>
     );
@@ -100,6 +140,9 @@ export const DeviceList = () => {
     <Card>
       <CardHeader>
         <CardTitle className="text-xl">Appareils disponibles</CardTitle>
+        <CardDescription>
+          {availableDevices.length} appareil{availableDevices.length > 1 ? 's' : ''} sur votre réseau
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <ul className="space-y-3">
@@ -109,37 +152,38 @@ export const DeviceList = () => {
             const isConnecting = connectionStatus === 'connecting';
             const buttonText = getButtonText(device.id);
             const buttonVariant = getButtonVariant(device.id) as any;
+            const noFilesSelected = selectedFiles.length === 0;
             
             return (
               <li 
                 key={device.id} 
-                className="flex items-center justify-between p-3 bg-muted/30 rounded-md"
+                className="flex items-center justify-between p-3 bg-muted/30 rounded-md hover:bg-muted/40 transition-all duration-200"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <div className={`h-2 w-2 rounded-full ${
-                    isConnected ? 'bg-green-500' : 
-                    isConnecting ? 'bg-amber-500' : 
-                    'bg-muted-foreground/50'
+                    isConnected ? 'bg-green-500 animate-pulse' : 
+                    isConnecting ? 'bg-amber-500 animate-pulse' : 
+                    'bg-orange-500'
                   }`} />
+                  <DeviceAvatar deviceId={device.id} size={36} />
                   <div>
                     <div className="font-medium">{device.name}</div>
-                    <div className="text-xs text-muted-foreground">ID: {device.id.substring(0, 8)}</div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      <span>ID: {device.id.substring(0, 8)}</span>
+                    </div>
                   </div>
                 </div>
                 
                 <div>
-                  {isConnecting && (
-                    <div className="text-xs text-muted-foreground mb-1 text-right">
-                      Établissement de la connexion...
-                    </div>
-                  )}
                   <Button 
                     variant={buttonVariant}
                     size="sm"
                     onClick={(e) => handleSendFiles(e, device.id)}
-                    disabled={isConnecting}
-                    className={isConnecting ? 'animate-pulse' : ''}
+                    disabled={isConnecting || noFilesSelected}
+                    className={`${isConnecting ? 'animate-pulse' : ''} min-w-[140px] transition-all duration-200`}
+                    title={noFilesSelected ? "Sélectionnez un fichier" : ""}
                   >
+                    {isConnecting && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
                     {buttonText}
                   </Button>
                 </div>
