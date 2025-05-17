@@ -48,7 +48,7 @@ export class FileTransferService {
     delete this.pendingChunksRef[fileId];
     
     if (!pendingChunksForFile || !Array.isArray(pendingChunksForFile) || pendingChunksForFile.length === 0) {
-      console.log(`Pas de chunks en attente pour le fichier ${fileId} ou format invalide`);
+      console.log(`No pending chunks for file ${fileId} or invalid format`);
       return; // Pas de chunks à appliquer ou format invalide
     }
     
@@ -110,16 +110,16 @@ export class FileTransferService {
         // Prendre les propriétés non vides du nouveau fichier
         const mergedFile = {
           ...existingFile,
-          // Prendre la taille du fichier non-nulle
+          // Take the non-null file size
           size: file.size || existingFile.size,
-          // Prendre le nom de l'expéditeur s'il est connu
+          // Take the known sender name if available
           from: file.from !== 'unknown' ? file.from : existingFile.from,
-          // Garder les chunks existants
+          // Keep the existing chunks if there are more
           chunks: existingFile.chunks.length > file.chunks.length ? 
                  existingFile.chunks : file.chunks,
-          // Garder la taille reçue la plus grande
+          // Keep the largest received size
           receivedSize: Math.max(existingFile.receivedSize, file.receivedSize),
-          // Garder le statut completed si l'un des deux est completed
+          // Keep the completed status if one of them is completed
           status: existingFile.status === 'completed' || file.status === 'completed' ?
                  'completed' : existingFile.status
         };
@@ -130,7 +130,7 @@ export class FileTransferService {
       }
     }
     
-    // Convertir la map en tableau
+    // Convert map to array
     this.incomingFiles = Array.from(filesById.values());
   }
 
@@ -233,7 +233,7 @@ export class FileTransferService {
 
   // Gérer les informations d'un nouveau fichier entrant
   private handleFileInfo(message: any) {
-    // Initialiser un nouveau fichier entrant
+    // Initialize a new incoming file
     const newFile: IncomingFile = {
       id: message.id,
       name: message.name,
@@ -246,14 +246,14 @@ export class FileTransferService {
     };
     console.log('New incoming file:', newFile.name, 'size:', newFile.size);
     
-    // Vérifier si le fichier existe déjà (cas où file-chunk est arrivé avant file-info)
+    // Check if the file already exists (case where file-chunk arrived before file-info)
     const fileExists = this.incomingFiles.some(f => f.id === message.id);
     
     if (fileExists) {
       console.log('File entry already exists, updating metadata');
       this.incomingFiles = this.incomingFiles.map(f => {
         if (f.id === message.id) {
-          // Conserver les chunks et la taille reçue mais mettre à jour les métadonnées
+          // Keep the chunks and received size but update the metadata
           return { 
             ...newFile, 
             chunks: f.chunks,
@@ -264,23 +264,23 @@ export class FileTransferService {
         return f;
       });
       
-      // Nettoyer les fichiers dupliqués juste après
+      // Clean up duplicate files right after
       setTimeout(() => this.cleanupDuplicateFiles(), 100);
       
       // Apply any pending chunks after updating metadata
       setTimeout(() => this.applyPendingChunks(message.id), 200);
     } else {
-      // C'est un nouveau fichier
+      // This is a new file
       console.log('Adding new file:', newFile.name);
       this.incomingFiles = [...this.incomingFiles, newFile];
       
-      // Supprimer de l'ensemble des fichiers récemment créés
+      // Remove from the set of recently created files
       this.recentlyCreatedFilesRef.delete(message.id);
       
-      // Appliquer les chunks en attente après ajout du fichier
+      // Apply pending chunks after adding the file
       setTimeout(() => this.applyPendingChunks(message.id), 200);
       
-      // Nettoyer les doublons après
+      // Clean up duplicates afterwards
       setTimeout(() => this.cleanupDuplicateFiles(), 500);
     }
   }
@@ -294,72 +294,72 @@ export class FileTransferService {
       return;
     }
     
-    // Log reception du chunk
+    // Log reception of the chunk
     console.log(`Received data chunk of size ${data.byteLength} for file ${currentPendingFileId}`);
     
-    // Vérifier si le fichier existe, sinon le créer
+    // Check if the file exists, otherwise create it
     let targetFile = this.incomingFiles.find(f => f.id === currentPendingFileId);
     
     if (!targetFile && !this.recentlyCreatedFilesRef.has(currentPendingFileId)) {
-      console.log(`Fichier ${currentPendingFileId} non trouvé, création d'une entrée temporaire`);
+      console.log(`File ${currentPendingFileId} not found, creating a temporary entry`);
       
-      // Marquer ce fichier comme récemment créé pour éviter les doublons
+      // Mark this file as recently created to avoid duplicates
       this.recentlyCreatedFilesRef.add(currentPendingFileId);
       
-      // Extraire le nom du fichier à partir de l'ID (format: timestamp-filename)
+      // Extract filename from ID (format: timestamp-filename)
       const fileName = currentPendingFileId.split('-').slice(1).join('-') || "unknown_file";
       
-      // Créer une entrée temporaire
+      // Create a temporary entry
       const temporaryFile: IncomingFile = {
         id: currentPendingFileId,
         name: fileName,
-        size: 0, // Taille inconnue, sera mise à jour quand file-info arrivera
+        size: 0, // Unknown size, will be updated when file-info arrives
         receivedSize: 0,
         progress: 0,
         status: 'receiving',
         chunks: [],
-        from: 'unknown' // Sera mis à jour quand file-info arrivera
+        from: 'unknown' // Will be updated when file-info arrives
       };
       
-      // Ajouter le chunk à la file d'attente pendant la création du fichier
+      // Add the chunk to the queue while the file is being created
       if (!this.pendingChunksRef[currentPendingFileId]) {
         this.pendingChunksRef[currentPendingFileId] = [];
       }
       
-      // S'assurer que le tableau est correctement initialisé
+      // Ensure the array is properly initialized
       if (!Array.isArray(this.pendingChunksRef[currentPendingFileId])) {
         this.pendingChunksRef[currentPendingFileId] = [];
       }
       
       this.pendingChunksRef[currentPendingFileId].push(data);
-      console.log(`Chunk mis en file d'attente pour le fichier ${currentPendingFileId}, total: ${this.pendingChunksRef[currentPendingFileId].length}`);
+      console.log(`Chunk queued for file ${currentPendingFileId}, total: ${this.pendingChunksRef[currentPendingFileId].length}`);
       
-      // Ajouter le fichier temporaire à l'état
+      // Add the temporary file to the state
       this.incomingFiles = [...this.incomingFiles, temporaryFile];
     } else if (!targetFile) {
-      // Le fichier est en cours de création, ajouter le chunk à la file d'attente
-      console.log(`Fichier ${currentPendingFileId} en cours de création, ajout du chunk à la file d'attente`);
+      // The file is being created, add the chunk to the queue
+      console.log(`File ${currentPendingFileId} is being created, adding chunk to queue`);
       if (!this.pendingChunksRef[currentPendingFileId]) {
         this.pendingChunksRef[currentPendingFileId] = [];
       }
       
-      // S'assurer que le tableau est correctement initialisé
+      // Ensure the array is properly initialized
       if (!Array.isArray(this.pendingChunksRef[currentPendingFileId])) {
         this.pendingChunksRef[currentPendingFileId] = [];
       }
       
       this.pendingChunksRef[currentPendingFileId].push(data);
-      console.log(`Chunk mis en file d'attente pour le fichier ${currentPendingFileId}, total: ${this.pendingChunksRef[currentPendingFileId].length}`);
+      console.log(`Chunk queued for file ${currentPendingFileId}, total: ${this.pendingChunksRef[currentPendingFileId].length}`);
     } else {
-      // Le fichier existe, ajouter directement le chunk
-      console.log(`Ajout direct du chunk au fichier ${targetFile.name}`);
+      // The file exists, add the chunk directly
+      console.log(`Adding chunk directly to file ${targetFile.name}`);
       
-      // Ajouter ce chunk au fichier
+      // Add this chunk to the file
       const newChunks = [...targetFile.chunks, data];
       const receivedSize = targetFile.receivedSize + data.byteLength;
       const progress = Math.min(100, Math.floor((receivedSize / (targetFile.size || receivedSize)) * 100));
       
-      // Mettre à jour l'état du fichier
+      // Update the file state
       this.incomingFiles = this.incomingFiles.map(file => {
         if (file.id === currentPendingFileId) {
           return {

@@ -3,9 +3,11 @@ import { useConnection } from '../hooks/useConnection';
 import { DeviceList } from '../components/DeviceList';
 import { TransferList } from '../components/TransferList';
 import { ReceivedFiles } from '../components/ReceivedFiles';
+import { FileSelection } from '../components/FileSelection';
+import { AppConfig } from '../config';
 
 export const HomePage = () => {
-  const { deviceName, setDeviceName, deviceId } = useConnection();
+  const { deviceName, setDeviceName, deviceId, selectedFiles, clearSelectedFiles } = useConnection();
   const [editingName, setEditingName] = useState(false);
   const [tempName, setTempName] = useState(deviceName);
   
@@ -52,13 +54,18 @@ export const HomePage = () => {
         
         <div className="instruction">
           <p>
-            Connect to other devices on the same network to share files.
-            Devices are detected automatically.
+            Share files with other devices on the same network.
+            Select up to {AppConfig.fileTransfer.maxFilesPerTransfer} files, then choose a device to send them to.
           </p>
         </div>
       </div>
       
-      <DeviceList />
+      <FileSelection />
+      
+      {selectedFiles.length > 0 && (
+        <DeviceList />
+      )}
+      
       <TransferList />
       <ReceivedFiles />
     </div>

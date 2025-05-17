@@ -1,21 +1,21 @@
 import { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
-import type { ConnectionContextType, Device, FileTransfer, IncomingFile } from '../types/connection.types';
+import type { ConnectionContextType, Device, FileTransfer, IncomingFile, SelectedFile } from '../types/connection.types';
 import { SocketService } from '../services/socket.service';
 import { PeerConnectionService } from '../services/peerConnection.service';
 import { FileTransferService } from '../services/fileTransfer.service';
+import { AppConfig } from '../config';
 
 export const ConnectionContext = createContext<ConnectionContextType | null>(null);
 
-const SIGNALING_SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
-
 export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   const [deviceId, setDeviceId] = useState<string>('');
-  const [deviceName, setDeviceName] = useState<string>(`Appareil-${Math.floor(Math.random() * 1000)}`);
+  const [deviceName, setDeviceName] = useState<string>(AppConfig.ui.defaultDeviceName);
   const [availableDevices, setAvailableDevices] = useState<Device[]>([]);
   const [fileTransfers, setFileTransfers] = useState<FileTransfer[]>([]);
   const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
   const [incomingFiles, setIncomingFiles] = useState<IncomingFile[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   
   // Références aux services
   const socketServiceRef = useRef<SocketService | null>(null);
@@ -34,7 +34,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     socketServiceRef.current = socketService;
     
     // Se connecter au serveur de signalisation
-    socketService.connect(SIGNALING_SERVER_URL)
+    socketService.connect(AppConfig.connection.signalingServerUrl)
       .then((socket) => {
         console.log('Socket connected successfully');
         setDeviceId(socketService.getDeviceId());
@@ -113,11 +113,114 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     return peerServiceRef.current?.isConnectedTo(deviceId) || false;
   };
 
+  // Ajouter un fichier à la liste des fichiers sélectionnés
+  const addSelectedFile = (file: File) => {
+    if (selectedFiles.length >= AppConfig.fileTransfer.maxFilesPerTransfer) {
+      console.warn(`Maximum number of files (${AppConfig.fileTransfer.maxFilesPerTransfer}) already selected`);
+      return;
+    }
+    
+    if (file.size > AppConfig.fileTransfer.maxFileSize) {
+      console.warn(`File ${file.name} exceeds maximum size of ${AppConfig.fileTransfer.maxFileSize / (1024 * 1024)}MB`);
+      return;
+    }
+    
+    const newFile: SelectedFile = {
+      id: `${Date.now()}-${file.name}`,
+      file,
+      name: file.name,
+      size: file.size
+    };
+    
+    setSelectedFiles(prev => [...prev, newFile]);
+  };
+  
+  // Supprimer un fichier de la liste des fichiers sélectionnés
+  const removeSelectedFile = (fileId: string) => {
+    setSelectedFiles(prev => prev.filter(file => file.id !== fileId));
+  };
+  
+  // Vider la liste des fichiers sélectionnés
+  const clearSelectedFiles = () => {
+    setSelectedFiles([]);
+  };
+
   // Envoyer un fichier
   const sendFile = async (file: File, targetDeviceId: string) => {
     if (fileTransferServiceRef.current) {
+      if (!isConnectedTo(targetDeviceId)) {
+        console.log('Connecting to device before sending file');
+        connectToDevice(targetDeviceId);
+        
+        // Attendre que la connexion soit établie
+        const waitForConnection = async (): Promise<boolean> => {
+          return new Promise(resolve => {
+            let attempts = 0;
+            const maxAttempts = 10;
+            const checkInterval = setInterval(() => {
+              if (isConnectedTo(targetDeviceId)) {
+                clearInterval(checkInterval);
+                resolve(true);
+              } else if (attempts >= maxAttempts) {
+                clearInterval(checkInterval);
+                resolve(false);
+              }
+              attempts++;
+            }, 1000);
+          });
+        };
+        
+        const connected = await waitForConnection();
+        if (!connected) {
+          console.error('Failed to connect to device');
+          return;
+        }
+      }
+      
       await fileTransferServiceRef.current.sendFile(file, targetDeviceId);
       setFileTransfers(fileTransferServiceRef.current.getFileTransfers());
+    }
+  };
+  
+  // Envoyer plusieurs fichiers
+  const sendFiles = async (files: SelectedFile[], targetDeviceId: string) => {
+    if (files.length === 0) return;
+    
+    if (!isConnectedTo(targetDeviceId)) {
+      console.log('Connecting to device before sending files');
+      connectToDevice(targetDeviceId);
+      
+      // Attendre que la connexion soit établie
+      const waitForConnection = async (): Promise<boolean> => {
+        return new Promise(resolve => {
+          let attempts = 0;
+          const maxAttempts = 10;
+          const checkInterval = setInterval(() => {
+            if (isConnectedTo(targetDeviceId)) {
+              clearInterval(checkInterval);
+              resolve(true);
+            } else if (attempts >= maxAttempts) {
+              clearInterval(checkInterval);
+              resolve(false);
+            }
+            attempts++;
+          }, 1000);
+        });
+      };
+      
+      const connected = await waitForConnection();
+      if (!connected) {
+        console.error('Failed to connect to device');
+        return;
+      }
+    }
+    
+    // Envoyer chaque fichier séquentiellement
+    for (const selectedFile of files) {
+      if (fileTransferServiceRef.current) {
+        await fileTransferServiceRef.current.sendFile(selectedFile.file, targetDeviceId);
+        setFileTransfers(fileTransferServiceRef.current.getFileTransfers());
+      }
     }
   };
 
@@ -164,10 +267,15 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     connectedDevices,
     connectToDevice,
     sendFile,
+    sendFiles,
     fileTransfers,
     incomingFiles,
     downloadFile,
     isConnectedTo,
+    selectedFiles,
+    addSelectedFile,
+    removeSelectedFile,
+    clearSelectedFiles,
     getServices
   };
 

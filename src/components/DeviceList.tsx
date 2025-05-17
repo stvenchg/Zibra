@@ -1,61 +1,70 @@
 import { useState, useCallback } from 'react';
 import { useConnection } from '../hooks/useConnection';
-import { useNavigate } from 'react-router-dom';
 
 export const DeviceList = () => {
-  const { availableDevices, connectToDevice, isConnectedTo } = useConnection();
+  const { availableDevices, connectToDevice, isConnectedTo, selectedFiles, sendFiles } = useConnection();
   const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState<Record<string, number>>({});
-  const navigate = useNavigate();
-
-  // Gérer la connexion et prévenir le rechargement de la page
-  const handleConnect = useCallback((e: React.MouseEvent, deviceId: string) => {
-    e.preventDefault(); // Empêcher le comportement par défaut
-    console.log('Attempting to connect to', deviceId);
+  
+  // Handle sending files to selected device
+  const handleSendFiles = useCallback((e: React.MouseEvent, deviceId: string) => {
+    e.preventDefault();
+    console.log('Sending files to device:', deviceId);
+    
+    if (selectedFiles.length === 0) {
+      alert('Please select at least one file to transfer.');
+      return;
+    }
+    
     setConnectingDeviceId(deviceId);
     
-    // Incrémenter le compteur de tentatives
+    // Increment the attempt counter
     setConnectionAttempts(prev => ({
       ...prev,
       [deviceId]: (prev[deviceId] || 0) + 1
     }));
     
-    connectToDevice(deviceId);
+    // Send files to the device
+    try {
+      sendFiles(selectedFiles, deviceId);
+      console.log('File transfer initiated');
+      
+      // We'll let the timeout handle resetting the state
+      // as the transfer progress will be tracked in TransferList
+    } catch (error: unknown) {
+      console.error('Failed to send files:', error);
+      setConnectingDeviceId(null);
+    }
     
-    // Ajouter un timeout après 20 secondes pour réinitialiser l'état "connecting"
-    // si la connexion ne s'établit pas
+    // Add a timeout to reset the "connecting" state
+    // if the connection doesn't establish within 20 seconds
     setTimeout(() => {
       setConnectingDeviceId(prev => prev === deviceId ? null : prev);
     }, 20000);
-  }, [connectToDevice]);
-
-  // Naviguer vers la page de transfert
-  const goToTransfer = useCallback((deviceId: string) => {
-    navigate(`/transfer/${deviceId}`);
-  }, [navigate]);
-
-  // Déterminer le statut de connexion d'un appareil
+  }, [connectToDevice, selectedFiles, sendFiles]);
+  
+  // Determine the connection status of a device
   const getConnectionStatus = useCallback((deviceId: string) => {
     if (isConnectedTo(deviceId)) return 'connected';
     if (connectingDeviceId === deviceId) return 'connecting';
     return 'disconnected';
   }, [isConnectedTo, connectingDeviceId]);
-
-  // Obtenir le texte à afficher sur le bouton
+  
+  // Get the text to display on the button
   const getButtonText = useCallback((deviceId: string) => {
     const status = getConnectionStatus(deviceId);
     const attempts = connectionAttempts[deviceId] || 0;
     
     switch (status) {
       case 'connected':
-        return 'Transfer';
+        return 'Send Files';
       case 'connecting':
         return attempts > 1 ? `Connecting (Retry ${attempts})...` : 'Connecting...';
       default:
-        return attempts > 0 ? 'Retry Connect' : 'Connect';
+        return attempts > 0 ? 'Retry Send' : 'Send Files';
     }
   }, [getConnectionStatus, connectionAttempts]);
-
+  
   if (availableDevices.length === 0) {
     return (
       <div className="device-list empty">
@@ -64,7 +73,7 @@ export const DeviceList = () => {
       </div>
     );
   }
-
+  
   return (
     <div className="device-list">
       <h2>Available devices</h2>
@@ -93,7 +102,7 @@ export const DeviceList = () => {
                 )}
                 <button 
                   className={`${isConnected ? 'transfer-button' : 'connect-button'} ${isConnecting ? 'connecting' : ''}`}
-                  onClick={(e) => isConnected ? goToTransfer(device.id) : handleConnect(e, device.id)}
+                  onClick={(e) => handleSendFiles(e, device.id)}
                   disabled={isConnecting}
                 >
                   {buttonText}

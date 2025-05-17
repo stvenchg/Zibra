@@ -3,9 +3,9 @@ import { useConnection } from '../hooks/useConnection';
 export const ReceivedFiles = () => {
   const { incomingFiles, downloadFile } = useConnection();
   
-  // Filtrer les fichiers en ne gardant que les fichiers avec des données valides
+  // Filter files keeping only those with valid data
   const validFiles = incomingFiles.filter(file => {
-    // Garder les fichiers qui ont une taille et des chunks, ou qui sont marqués comme complétés
+    // Keep files that have a size and chunks, or that are marked as completed
     return (file.receivedSize > 0 && file.chunks.length > 0) || file.status === 'completed';
   });
   
@@ -26,8 +26,10 @@ export const ReceivedFiles = () => {
         {validFiles.map((file, index) => (
           <li key={`${file.id}-${index}`} className={`received-file status-${file.status}`}>
             <div className="file-info">
-              <span className="file-name">{file.name}</span>
-              <span className="file-size">{formatSize(file.size || file.receivedSize)}</span>
+              <div className="file-primary-info">
+                <span className="file-name">{file.name}</span>
+                <span className="file-size">{formatSize(file.size || file.receivedSize)}</span>
+              </div>
               <span className="file-source">From: {file.from}</span>
             </div>
             
@@ -43,6 +45,7 @@ export const ReceivedFiles = () => {
               <button 
                 className="download-button"
                 onClick={() => downloadFile(file.id)}
+                aria-label={`Download ${file.name}`}
               >
                 Download
               </button>

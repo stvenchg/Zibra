@@ -14,6 +14,7 @@ export interface FileTransfer {
   fileSize: number;
   progress: number;
   status: 'pending' | 'transferring' | 'completed' | 'failed';
+  targetDevice?: string; // ID of the device receiving the file
 }
 
 export interface IncomingFile {
@@ -25,6 +26,13 @@ export interface IncomingFile {
   status: 'receiving' | 'completed' | 'failed';
   chunks: ArrayBuffer[];
   from: string;
+}
+
+export interface SelectedFile {
+  id: string;
+  file: File;
+  name: string;
+  size: number;
 }
 
 export interface ConnectionServices {
@@ -41,9 +49,14 @@ export interface ConnectionContextType {
   connectedDevices: string[]; // ID of connected devices
   connectToDevice: (deviceId: string) => void;
   sendFile: (file: File, targetDeviceId: string) => void;
+  sendFiles: (files: SelectedFile[], targetDeviceId: string) => void;
   fileTransfers: FileTransfer[];
   incomingFiles: IncomingFile[];
   downloadFile: (fileId: string) => void;
   isConnectedTo: (deviceId: string) => boolean;
+  selectedFiles: SelectedFile[];
+  addSelectedFile: (file: File) => void;
+  removeSelectedFile: (fileId: string) => void;
+  clearSelectedFiles: () => void;
   getServices: () => ConnectionServices;
 } 
