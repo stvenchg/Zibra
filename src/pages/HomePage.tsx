@@ -5,6 +5,9 @@ import { TransferList } from '../components/TransferList';
 import { ReceivedFiles } from '../components/ReceivedFiles';
 import { FileSelection } from '../components/FileSelection';
 import { AppConfig } from '../config';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const HomePage = () => {
   const { deviceName, setDeviceName, deviceId, selectedFiles, clearSelectedFiles } = useConnection();
@@ -24,41 +27,42 @@ export const HomePage = () => {
   };
   
   return (
-    <div className="home-page">
-      <div className="device-info-panel">
-        <div className="device-info">
-          <h1>Zibra</h1>
-          <h2>Local network file sharing</h2>
-          
-          <div className="my-device">
-            <h3>My device</h3>
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      <Card>
+        <CardHeader>
+          <img src="/zibra.svg" alt="Zibra" className="w-50" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <h3 className="font-medium mb-2">Mon appareil</h3>
             {editingName ? (
-              <div className="name-edit">
-                <input
+              <div className="flex items-center gap-2">
+                <Input
                   type="text"
                   value={tempName}
                   onChange={e => setTempName(e.target.value)}
                   autoFocus
+                  className="flex-1"
                 />
-                <button onClick={handleNameSave}>Save</button>
+                <Button onClick={handleNameSave} size="sm">Enregistrer</Button>
               </div>
             ) : (
-              <div className="name-display">
-                <span>{deviceName}</span>
-                <button onClick={handleNameEdit}>Edit</button>
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-lg">{deviceName}</span>
+                <Button onClick={handleNameEdit} variant="outline" size="sm">Modifier</Button>
               </div>
             )}
-            <div className="device-id">ID: {deviceId.substring(0, 8)}</div>
+            <div className="text-xs text-muted-foreground mt-1">ID: {deviceId.substring(0, 8)}</div>
           </div>
-        </div>
-        
-        <div className="instruction">
-          <p>
-            Share files with other devices on the same network.
-            Select up to {AppConfig.fileTransfer.maxFilesPerTransfer} files, then choose a device to send them to.
-          </p>
-        </div>
-      </div>
+          
+          <div className="bg-muted/50 p-4 rounded-lg text-sm">
+            <p>
+              Partagez des fichiers avec d'autres appareils sur le même réseau.
+              Sélectionnez jusqu'à {AppConfig.fileTransfer.maxFilesPerTransfer} fichiers, puis choisissez un appareil destinataire.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
       
       <FileSelection />
       

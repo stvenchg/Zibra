@@ -1,6 +1,11 @@
 import { useState, useCallback } from 'react';
 import { useConnection } from '../hooks/useConnection';
 import { AppConfig } from '../config';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { X, Upload } from 'lucide-react';
 
 export const FileSelection = () => {
   const { selectedFiles, addSelectedFile, removeSelectedFile, clearSelectedFiles } = useConnection();
@@ -24,7 +29,7 @@ export const FileSelection = () => {
       const remainingSlots = AppConfig.fileTransfer.maxFilesPerTransfer - selectedFiles.length;
       
       if (remainingSlots <= 0) {
-        alert(`You can only select up to ${AppConfig.fileTransfer.maxFilesPerTransfer} files at a time.`);
+        alert(`Vous pouvez sélectionner jusqu'à ${AppConfig.fileTransfer.maxFilesPerTransfer} fichiers à la fois.`);
         return;
       }
       
@@ -40,7 +45,7 @@ export const FileSelection = () => {
       const remainingSlots = AppConfig.fileTransfer.maxFilesPerTransfer - selectedFiles.length;
       
       if (remainingSlots <= 0) {
-        alert(`You can only select up to ${AppConfig.fileTransfer.maxFilesPerTransfer} files at a time.`);
+        alert(`Vous pouvez sélectionner jusqu'à ${AppConfig.fileTransfer.maxFilesPerTransfer} fichiers à la fois.`);
         return;
       }
       
@@ -54,97 +59,125 @@ export const FileSelection = () => {
   }, [addSelectedFile, selectedFiles.length]);
   
   const formatSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes < 1024) return `${bytes} o`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
   };
   
   return (
-    <div className="selected-files-container">
-      <h2>File Selection</h2>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-xl">Sélection de fichiers</CardTitle>
+      </CardHeader>
       
-      {selectedFiles.length > 0 ? (
-        <>
-          <ul className="selected-files-list">
-            {selectedFiles.map(file => (
-              <li key={file.id} className="selected-file-item">
-                <div className="selected-file-info">
-                  <span className="selected-file-name">{file.name}</span>
-                  <span className="selected-file-size">{formatSize(file.size)}</span>
-                </div>
-                <button 
-                  className="remove-file-btn"
-                  onClick={() => removeSelectedFile(file.id)}
-                  aria-label={`Remove ${file.name}`}
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
-          
-          <div className="file-selection-actions">
-            <div>
-              {selectedFiles.length >= AppConfig.fileTransfer.maxFilesPerTransfer ? (
-                <span className="max-files-notice">
-                  Maximum number of files reached ({AppConfig.fileTransfer.maxFilesPerTransfer})
-                </span>
-              ) : (
-                <span className="files-count">
-                  {selectedFiles.length} of {AppConfig.fileTransfer.maxFilesPerTransfer} files selected
-                </span>
-              )}
+      <CardContent className="space-y-4">
+        {selectedFiles.length > 0 ? (
+          <>
+            <ul className="space-y-2">
+              {selectedFiles.map(file => (
+                <li key={file.id} className="flex items-center justify-between bg-muted/40 p-2 rounded-md">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{file.name}</div>
+                    <div className="text-xs text-muted-foreground">{formatSize(file.size)}</div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    onClick={() => removeSelectedFile(file.id)}
+                    aria-label={`Supprimer ${file.name}`}
+                  >
+                    <X size={16} />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                {selectedFiles.length >= AppConfig.fileTransfer.maxFilesPerTransfer ? (
+                  <Badge variant="secondary">
+                    Maximum atteint ({AppConfig.fileTransfer.maxFilesPerTransfer})
+                  </Badge>
+                ) : (
+                  <Badge variant="outline">
+                    {selectedFiles.length} / {AppConfig.fileTransfer.maxFilesPerTransfer} fichiers
+                  </Badge>
+                )}
+              </div>
+              
+              <Button 
+                onClick={clearSelectedFiles}
+                variant="outline"
+                size="sm"
+              >
+                Tout effacer
+              </Button>
             </div>
             
-            <button 
-              onClick={clearSelectedFiles}
-              className="clear-files-btn"
-            >
-              Clear All Files
-            </button>
-          </div>
-          
-          {selectedFiles.length < AppConfig.fileTransfer.maxFilesPerTransfer && (
-            <div 
-              className={`drop-zone ${isDragging ? 'dragging' : ''}`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <p>Add more files by dropping them here</p>
-              <p>or</p>
-              <label className="file-input-label">
+            {selectedFiles.length < AppConfig.fileTransfer.maxFilesPerTransfer && (
+              <div 
+                className={`mt-4 border-2 border-dashed rounded-lg p-6 text-center ${
+                  isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Upload className="h-10 w-10 text-muted-foreground/70" />
+                  <p className="text-sm text-muted-foreground">Glissez d'autres fichiers ici</p>
+                  <p className="text-xs text-muted-foreground">ou</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="relative"
+                    onClick={() => document.getElementById('add-more-files')?.click()}
+                  >
+                    Parcourir
+                    <input 
+                      id="add-more-files"
+                      type="file" 
+                      onChange={handleFileSelect} 
+                      className="sr-only"
+                      multiple
+                    />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div 
+            className={`border-2 border-dashed rounded-lg p-10 text-center ${
+              isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className="flex flex-col items-center gap-3">
+              <Upload className="h-12 w-12 text-muted-foreground/70" />
+              <p className="text-muted-foreground">Glissez et déposez vos fichiers ici</p>
+              <p className="text-xs text-muted-foreground">ou</p>
+              <Button
+                variant="outline"
+                className="relative"
+                onClick={() => document.getElementById('file-upload')?.click()}
+              >
+                Sélectionner des fichiers
                 <input 
+                  id="file-upload"
                   type="file" 
                   onChange={handleFileSelect} 
-                  className="file-input"
+                  className="sr-only"
                   multiple
                 />
-                Browse Files
-              </label>
+              </Button>
             </div>
-          )}
-        </>
-      ) : (
-        <div 
-          className={`drop-zone ${isDragging ? 'dragging' : ''}`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
-          <p>Drag and drop files here</p>
-          <p>or</p>
-          <label className="file-input-label">
-            <input 
-              type="file" 
-              onChange={handleFileSelect} 
-              className="file-input"
-              multiple
-            />
-            Select Files
-          </label>
-        </div>
-      )}
-    </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }; 

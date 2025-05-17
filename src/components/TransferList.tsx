@@ -1,4 +1,7 @@
 import { useConnection } from '../hooks/useConnection';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 
 export const TransferList = () => {
   const { fileTransfers } = useConnection();
@@ -8,53 +11,59 @@ export const TransferList = () => {
   }
   
   const formatSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes < 1024) return `${bytes} o`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch(status) {
+      case 'completed':
+        return <Badge variant="default">Terminé</Badge>;
+      case 'failed':
+        return <Badge variant="destructive">Échec</Badge>;
+      case 'pending':
+        return <Badge variant="secondary">En attente</Badge>;
+      default:
+        return <Badge variant="outline">Envoi</Badge>;
+    }
   };
   
   return (
-    <div className="transfers-container">
-      <h2>Active Transfers</h2>
-      <ul className="transfer-list">
-        {fileTransfers.map(transfer => (
-          <li key={transfer.id} className={`transfer-item status-${transfer.status}`}>
-            <div className="transfer-info">
-              <div className="transfer-file-info">
-                <span className="file-name">{transfer.fileName}</span>
-                <span className="file-size">
-                  {formatSize(transfer.fileSize)}
-                </span>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-xl">Transferts actifs</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="space-y-3">
+          {fileTransfers.map(transfer => (
+            <li key={transfer.id} className="p-3 bg-muted/30 rounded-md">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <div className="font-medium">{transfer.fileName}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {formatSize(transfer.fileSize)}
+                  </div>
+                </div>
+                <div>
+                  {getStatusBadge(transfer.status)}
+                </div>
               </div>
-              <div className="transfer-status-info">
-                <span className={`status-badge status-${transfer.status}`}>
+              
+              <div className="space-y-1">
+                <Progress value={transfer.progress} className="h-2" />
+                <div className="flex justify-end text-xs text-muted-foreground">
                   {transfer.status === 'completed' 
-                    ? 'Completed' 
+                    ? 'Terminé' 
                     : transfer.status === 'failed'
-                      ? 'Failed'
-                      : transfer.status === 'pending'
-                        ? 'Pending'
-                        : 'Sending'}
-                </span>
+                      ? 'Échec'
+                      : `${transfer.progress}%`}
+                </div>
               </div>
-            </div>
-            
-            <div className="transfer-progress">
-              <div 
-                className="progress-bar"
-                style={{ width: `${transfer.progress}%` }}
-              />
-              <span className="progress-text">
-                {transfer.status === 'completed' 
-                  ? 'Completed' 
-                  : transfer.status === 'failed'
-                    ? 'Failed'
-                    : `${transfer.progress}%`}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }; 

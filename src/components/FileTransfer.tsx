@@ -1,5 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useConnection } from '../hooks/useConnection';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Upload } from 'lucide-react';
 
 export const FileTransfer = ({ targetDeviceId }: { targetDeviceId: string }) => {
   const { sendFile, availableDevices } = useConnection();
@@ -34,30 +37,50 @@ export const FileTransfer = ({ targetDeviceId }: { targetDeviceId: string }) => 
   }, [sendFile, targetDeviceId]);
   
   if (!targetDevice) {
-    return <p>Device not available</p>;
+    return (
+      <Card className="text-center p-4">
+        <CardContent>
+          <p className="text-muted-foreground">Appareil non disponible</p>
+        </CardContent>
+      </Card>
+    );
   }
   
   return (
-    <div className="file-transfer-container">
-      <h2>Send to {targetDevice.name}</h2>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-xl">Envoyer à {targetDevice.name}</CardTitle>
+      </CardHeader>
       
-      <div 
-        className={`drop-zone ${isDragging ? 'dragging' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <p>Drag and drop a file here</p>
-        <p>or</p>
-        <label className="file-input-label">
-          <input 
-            type="file" 
-            onChange={handleFileSelect} 
-            className="file-input"
-          />
-          Select a file
-        </label>
-      </div>
-    </div>
+      <CardContent>
+        <div 
+          className={`border-2 border-dashed rounded-lg p-10 text-center ${
+            isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <div className="flex flex-col items-center gap-3">
+            <Upload className="h-12 w-12 text-muted-foreground/70" />
+            <p className="text-muted-foreground">Glissez et déposez un fichier ici</p>
+            <p className="text-xs text-muted-foreground">ou</p>
+            <Button
+              variant="outline"
+              className="relative"
+              onClick={() => document.getElementById('file-select')?.click()}
+            >
+              Sélectionner un fichier
+              <input 
+                id="file-select"
+                type="file" 
+                onChange={handleFileSelect} 
+                className="sr-only"
+              />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }; 

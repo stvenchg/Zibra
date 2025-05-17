@@ -1,5 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useConnection } from '../hooks/useConnection';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export const DeviceList = () => {
   const { availableDevices, connectToDevice, isConnectedTo, selectedFiles, sendFiles } = useConnection();
@@ -9,10 +12,10 @@ export const DeviceList = () => {
   // Handle sending files to selected device
   const handleSendFiles = useCallback((e: React.MouseEvent, deviceId: string) => {
     e.preventDefault();
-    console.log('Sending files to device:', deviceId);
+    console.log('Envoi de fichiers vers l\'appareil:', deviceId);
     
     if (selectedFiles.length === 0) {
-      alert('Please select at least one file to transfer.');
+      alert('Veuillez sélectionner au moins un fichier à transférer.');
       return;
     }
     
@@ -27,12 +30,12 @@ export const DeviceList = () => {
     // Send files to the device
     try {
       sendFiles(selectedFiles, deviceId);
-      console.log('File transfer initiated');
+      console.log('Transfert de fichier initié');
       
       // We'll let the timeout handle resetting the state
       // as the transfer progress will be tracked in TransferList
     } catch (error: unknown) {
-      console.error('Failed to send files:', error);
+      console.error('Échec de l\'envoi des fichiers:', error);
       setConnectingDeviceId(null);
     }
     
@@ -57,61 +60,94 @@ export const DeviceList = () => {
     
     switch (status) {
       case 'connected':
-        return 'Send Files';
+        return 'Envoyer les fichiers';
       case 'connecting':
-        return attempts > 1 ? `Connecting (Retry ${attempts})...` : 'Connecting...';
+        return attempts > 1 ? `Connexion (Essai ${attempts})...` : 'Connexion...';
       default:
-        return attempts > 0 ? 'Retry Send' : 'Send Files';
+        return attempts > 0 ? 'Réessayer' : 'Envoyer les fichiers';
     }
   }, [getConnectionStatus, connectionAttempts]);
+
+  // Get appropriate button variant based on status
+  const getButtonVariant = useCallback((deviceId: string) => {
+    const status = getConnectionStatus(deviceId);
+    
+    switch (status) {
+      case 'connected':
+        return 'default';
+      case 'connecting':
+        return 'outline';
+      default:
+        return 'secondary';
+    }
+  }, [getConnectionStatus]);
   
   if (availableDevices.length === 0) {
     return (
-      <div className="device-list empty">
-        <p>No devices detected on the network.</p>
-        <p>Devices connected to the same network will appear here automatically.</p>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Appareils disponibles</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-8">
+          <p className="text-muted-foreground">Aucun appareil détecté sur le réseau.</p>
+          <p className="text-muted-foreground text-sm mt-1">Les appareils connectés au même réseau apparaîtront automatiquement ici.</p>
+        </CardContent>
+      </Card>
     );
   }
   
   return (
-    <div className="device-list">
-      <h2>Available devices</h2>
-      <ul>
-        {availableDevices.map(device => {
-          const connectionStatus = getConnectionStatus(device.id);
-          const isConnected = connectionStatus === 'connected';
-          const isConnecting = connectionStatus === 'connecting';
-          const buttonText = getButtonText(device.id);
-          
-          return (
-            <li 
-              key={device.id} 
-              className={`device-item ${connectionStatus}`}
-            >
-              <div className="device-info">
-                <span className={`status-indicator ${connectionStatus}`} />
-                <span className="device-name">{device.name}</span>
-                <span className="device-id">{device.id.substring(0, 8)}</span>
-              </div>
-              <div className="connection-info">
-                {isConnecting && (
-                  <span className="connection-status">
-                    Establishing connection...
-                  </span>
-                )}
-                <button 
-                  className={`${isConnected ? 'transfer-button' : 'connect-button'} ${isConnecting ? 'connecting' : ''}`}
-                  onClick={(e) => handleSendFiles(e, device.id)}
-                  disabled={isConnecting}
-                >
-                  {buttonText}
-                </button>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-xl">Appareils disponibles</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="space-y-3">
+          {availableDevices.map(device => {
+            const connectionStatus = getConnectionStatus(device.id);
+            const isConnected = connectionStatus === 'connected';
+            const isConnecting = connectionStatus === 'connecting';
+            const buttonText = getButtonText(device.id);
+            const buttonVariant = getButtonVariant(device.id) as any;
+            
+            return (
+              <li 
+                key={device.id} 
+                className="flex items-center justify-between p-3 bg-muted/30 rounded-md"
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${
+                    isConnected ? 'bg-green-500' : 
+                    isConnecting ? 'bg-amber-500' : 
+                    'bg-muted-foreground/50'
+                  }`} />
+                  <div>
+                    <div className="font-medium">{device.name}</div>
+                    <div className="text-xs text-muted-foreground">ID: {device.id.substring(0, 8)}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  {isConnecting && (
+                    <div className="text-xs text-muted-foreground mb-1 text-right">
+                      Établissement de la connexion...
+                    </div>
+                  )}
+                  <Button 
+                    variant={buttonVariant}
+                    size="sm"
+                    onClick={(e) => handleSendFiles(e, device.id)}
+                    disabled={isConnecting}
+                    className={isConnecting ? 'animate-pulse' : ''}
+                  >
+                    {buttonText}
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }; 
