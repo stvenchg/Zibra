@@ -1,13 +1,32 @@
 import { useConnection } from '../hooks/useConnection';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Send, ArrowUpDown } from 'lucide-react';
 
 export const TransferList = () => {
   const { fileTransfers } = useConnection();
   
   if (fileTransfers.length === 0) {
-    return null;
+    return (
+      <Card>
+        {/* <CardHeader>
+          <CardTitle className="text-xl">Transferts</CardTitle>
+          <CardDescription>Historique des fichiers envoyés</CardDescription>
+        </CardHeader> */}
+        <CardContent className="text-center py-8 space-y-4">
+          <div className="flex justify-center">
+            <div className="p-4 rounded-full bg-muted/50">
+              <ArrowUpDown className="h-10 w-10 text-muted-foreground" />
+            </div>
+          </div>
+          <p className="text-muted-foreground">Aucun transfert</p>
+          <p className="text-sm text-muted-foreground flex items-center gap-1 justify-center">
+            <span>Les fichiers que vous envoyez apparaîtront ici avec leur état.</span>
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
   
   const formatSize = (bytes: number): string => {
@@ -31,6 +50,12 @@ export const TransferList = () => {
   
   return (
     <Card>
+      {/* <CardHeader>
+        <CardTitle className="text-xl">Transferts</CardTitle>
+        <CardDescription>
+          {fileTransfers.length} fichier{fileTransfers.length > 1 ? 's' : ''} dans l'historique
+        </CardDescription>
+      </CardHeader> */}
       <CardContent>
         <ul className="space-y-3">
           {[...fileTransfers].reverse().map(transfer => (

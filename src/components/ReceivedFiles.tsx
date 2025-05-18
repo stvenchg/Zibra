@@ -1,12 +1,19 @@
 import { useConnection } from '../hooks/useConnection';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Download } from 'lucide-react';
+import { Download, Inbox } from 'lucide-react';
+import { vibrateMedium } from '../utils/vibration';
 
 export const ReceivedFiles = () => {
   const { incomingFiles, downloadFile } = useConnection();
+  
+  // Fonction modifiée pour inclure une vibration lors du téléchargement
+  const handleDownload = (fileId: string) => {
+    vibrateMedium(); // Vibration lors du téléchargement
+    downloadFile(fileId);
+  };
   
   // Filter files keeping only those with valid data
   const validFiles = incomingFiles.filter(file => {
@@ -15,7 +22,25 @@ export const ReceivedFiles = () => {
   });
   
   if (validFiles.length === 0) {
-    return null;
+    return (
+      <Card>
+        {/* <CardHeader>
+          <CardTitle className="text-xl">Fichiers reçus</CardTitle>
+          <CardDescription>Fichiers envoyés par d'autres appareils</CardDescription>
+        </CardHeader> */}
+        <CardContent className="text-center py-8 space-y-4">
+          <div className="flex justify-center">
+            <div className="p-4 rounded-full bg-muted/50">
+              <Inbox className="h-10 w-10 text-muted-foreground" />
+            </div>
+          </div>
+          <p className="text-muted-foreground">Aucun fichier reçu</p>
+          <p className="text-sm text-muted-foreground flex items-center gap-1 justify-center">
+            <span>Les fichiers que vous recevez apparaîtront ici pour téléchargement.</span>
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
   
   const formatSize = (bytes: number): string => {
@@ -38,6 +63,12 @@ export const ReceivedFiles = () => {
   
   return (
     <Card>
+      {/* <CardHeader>
+        <CardTitle className="text-xl">Fichiers reçus</CardTitle>
+        <CardDescription>
+          {validFiles.length} fichier{validFiles.length > 1 ? 's' : ''} reçu{validFiles.length > 1 ? 's' : ''}
+        </CardDescription>
+      </CardHeader> */}
       <CardContent>
         <ul className="space-y-3">
           {[...validFiles].reverse().map((file, index) => (
@@ -58,7 +89,7 @@ export const ReceivedFiles = () => {
                   <Button 
                     variant="outline"
                     size="sm"
-                    onClick={() => downloadFile(file.id)}
+                    onClick={() => handleDownload(file.id)}
                     aria-label={`Télécharger ${file.name}`}
                     className="gap-1"
                   >

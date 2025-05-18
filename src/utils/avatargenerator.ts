@@ -1,7 +1,7 @@
 import { createAvatar } from '@dicebear/core';
-import { avataaars, bottts, lorelei, miniavs, personas } from '@dicebear/collection';
+import { avataaars, bottts, lorelei, miniavs, personas, glass } from '@dicebear/collection';
 
-export type AvatarStyle = 'avataaars' | 'bottts' | 'lorelei' | 'miniavs' | 'personas';
+export type AvatarStyle = 'avataaars' | 'bottts' | 'lorelei' | 'miniavs' | 'personas' | 'glass';
 
 /**
  * Génère un avatar aléatoire basé sur un identifiant et un style
@@ -24,6 +24,9 @@ export const generateAvatar = (seed: string, style: AvatarStyle = 'personas'): s
       break;
     case 'miniavs':
       avatar = createAvatar(miniavs, { seed });
+      break;
+    case 'glass':
+      avatar = createAvatar(glass, { seed });
       break;
     case 'personas':
     default:

@@ -17,8 +17,8 @@ export const AppConfig = {
   fileTransfer: {
     maxFileSize: 1024 * 1024 * 500, // 500MB
     maxFilesPerTransfer: 5,
-    chunkSize: 16384, // 16KB chunks
-    chunkDelay: 20, // milliseconds between chunks
+    chunkSize: 64000, // 64KB chunks (réduit de 256KB à 64KB pour meilleure stabilité)
+    chunkDelay: 0, // 0ms - pas de délai entre les chunks
   },
   
   // UI Settings

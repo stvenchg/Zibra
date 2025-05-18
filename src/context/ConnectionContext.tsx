@@ -215,11 +215,23 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
       }
     }
     
-    // Envoyer chaque fichier séquentiellement
+    // Traiter les fichiers un par un de façon séquentielle
     for (const selectedFile of files) {
       if (fileTransferServiceRef.current) {
-        await fileTransferServiceRef.current.sendFile(selectedFile.file, targetDeviceId);
-        setFileTransfers(fileTransferServiceRef.current.getFileTransfers());
+        console.log(`Envoi séquentiel de ${selectedFile.name} (${selectedFile.size} octets)`);
+        
+        try {
+          // Envoyer le fichier actuel
+          await fileTransferServiceRef.current.sendFile(selectedFile.file, targetDeviceId);
+          
+          // Mettre à jour l'interface après chaque fichier
+          setFileTransfers(fileTransferServiceRef.current.getFileTransfers());
+          
+          // Attendre un court instant entre chaque fichier pour stabiliser la connexion
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (err) {
+          console.error(`Erreur lors de l'envoi de ${selectedFile.name}:`, err);
+        }
       }
     }
   };

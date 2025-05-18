@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { X, Upload, FileIcon, AlertCircle } from 'lucide-react';
+import { vibrateLight, vibrateMedium, vibrateError } from '../utils/vibration';
 
 export const FileSelection = () => {
   const { selectedFiles, addSelectedFile, removeSelectedFile, clearSelectedFiles } = useConnection();
@@ -31,6 +32,7 @@ export const FileSelection = () => {
       const remainingSlots = AppConfig.fileTransfer.maxFilesPerTransfer - selectedFiles.length;
       
       if (remainingSlots <= 0) {
+        vibrateError();
         addToast({
           type: 'warning',
           title: 'Nombre maximum de fichiers atteint',
@@ -55,12 +57,17 @@ export const FileSelection = () => {
       });
       
       if (oversizedCount > 0) {
+        vibrateError();
         addToast({
           type: 'error',
           title: 'Fichiers trop volumineux',
           description: `${oversizedCount} fichier(s) dépassent la taille maximale de ${(AppConfig.fileTransfer.maxFileSize / (1024 * 1024)).toFixed(0)} Mo.`,
           duration: 5000
         });
+      }
+      
+      if (addedCount > 0) {
+        vibrateMedium();
       }
     }
   }, [addSelectedFile, selectedFiles.length, addToast]);
@@ -71,6 +78,7 @@ export const FileSelection = () => {
       const remainingSlots = AppConfig.fileTransfer.maxFilesPerTransfer - selectedFiles.length;
       
       if (remainingSlots <= 0) {
+        vibrateError();
         addToast({
           type: 'warning',
           title: 'Nombre maximum de fichiers atteint',
@@ -95,12 +103,17 @@ export const FileSelection = () => {
       });
       
       if (oversizedCount > 0) {
+        vibrateError();
         addToast({
           type: 'error',
           title: 'Fichiers trop volumineux',
           description: `${oversizedCount} fichier(s) dépassent la taille maximale de ${(AppConfig.fileTransfer.maxFileSize / (1024 * 1024)).toFixed(0)} Mo.`,
           duration: 5000
         });
+      }
+      
+      if (addedCount > 0) {
+        vibrateMedium();
       }
       
       // Reset the input so the same file can be selected again
@@ -135,6 +148,16 @@ export const FileSelection = () => {
     return <FileIcon className={`shrink-0 h-5 w-5 ${colorClass}`} />;
   };
   
+  const handleRemoveFile = (fileId: string) => {
+    vibrateLight();
+    removeSelectedFile(fileId);
+  };
+  
+  const handleClearFiles = () => {
+    vibrateMedium();
+    clearSelectedFiles();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -161,7 +184,7 @@ export const FileSelection = () => {
                     variant="ghost" 
                     size="icon"
                     className="h-8 w-8 rounded-full transition-colors"
-                    onClick={() => removeSelectedFile(file.id)}
+                    onClick={() => handleRemoveFile(file.id)}
                     aria-label={`Supprimer ${file.name}`}
                   >
                     <X size={16} />
@@ -184,7 +207,7 @@ export const FileSelection = () => {
               </div>
               
               <Button 
-                onClick={clearSelectedFiles}
+                onClick={handleClearFiles}
                 variant="destructive"
                 size="sm"
                 className="!hover:bg-red-200 transition-colors"

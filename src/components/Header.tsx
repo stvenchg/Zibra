@@ -3,6 +3,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Info, Github } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { vibrateLight } from '../utils/vibration';
 
 export const Header = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -27,8 +28,14 @@ export const Header = () => {
     return () => observer.disconnect();
   }, []);
 
+  // Fonction pour gérer le clic sur le bouton À propos
+  const handleInfoClick = () => {
+    vibrateLight(); // Vibration légère
+    alert('Zibra - Application de partage de fichiers WebRTC\nDéveloppée avec React, TypeScript et TailwindCSS');
+  };
+
   return (
-    <header className="border-b border-border bg-card">
+    <header className="border-b border-border bg-card sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center">
@@ -45,7 +52,7 @@ export const Header = () => {
             variant="ghost"
             size="icon"
             title="À propos"
-            onClick={() => alert('Zibra - Application de partage de fichiers WebRTC\nDéveloppée avec React, TypeScript et TailwindCSS')}
+            onClick={handleInfoClick}
           >
             <Info size={18} />
           </Button>

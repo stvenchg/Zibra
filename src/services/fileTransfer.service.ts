@@ -1,4 +1,6 @@
 import type { FileTransfer, IncomingFile } from '../types/connection.types';
+import { AppConfig } from '../config';
+import { vibrateSuccess, vibrateNotification, vibrateError } from '../utils/vibration';
 
 export class FileTransferService {
   private fileTransfers: FileTransfer[] = [];
@@ -79,7 +81,10 @@ export class FileTransferService {
         }
       }
       
-      const progress = Math.min(100, Math.floor((receivedSize / (file.size || receivedSize)) * 100));
+      const knownFileSize = file.size || receivedSize;
+      const progress = Math.min(100, Math.floor((receivedSize / knownFileSize) * 100));
+      
+      console.log(`Progress after applying pending chunks for ${file.name}: ${progress}% (${receivedSize}/${knownFileSize} bytes)`);
       
       // Mettre à jour le fichier avec tous les chunks en attente
       const updatedFiles = [...this.incomingFiles];
@@ -90,7 +95,11 @@ export class FileTransferService {
         progress
       };
       
+      // Mise à jour immédiate de l'état
       this.incomingFiles = updatedFiles;
+      
+      // Forcer une mise à jour des fichiers pour actualiser l'UI
+      setTimeout(() => this.setIncomingFiles([...this.incomingFiles]), 100);
     } catch (err) {
       console.error(`Erreur lors de l'application des chunks pour ${fileId}:`, err);
     }
@@ -357,7 +366,10 @@ export class FileTransferService {
       // Add this chunk to the file
       const newChunks = [...targetFile.chunks, data];
       const receivedSize = targetFile.receivedSize + data.byteLength;
-      const progress = Math.min(100, Math.floor((receivedSize / (targetFile.size || receivedSize)) * 100));
+      const knownFileSize = targetFile.size || receivedSize; // Si la taille n'est pas connue, utiliser la taille reçue comme approximation
+      const progress = Math.min(100, Math.floor((receivedSize / knownFileSize) * 100));
+      
+      console.log(`Progress update for ${targetFile.name}: ${progress}% (${receivedSize}/${knownFileSize} bytes)`);
       
       // Update the file state
       this.incomingFiles = this.incomingFiles.map(file => {
@@ -371,6 +383,11 @@ export class FileTransferService {
         }
         return file;
       });
+      
+      // Forcer une mise à jour de l'état toutes les 10 chunks ou pour les gros fichiers
+      if (newChunks.length % 10 === 0 || knownFileSize > 10 * 1024 * 1024) {
+        this.setIncomingFiles([...this.incomingFiles]);
+      }
     }
   }
 
@@ -402,16 +419,40 @@ export class FileTransferService {
     this.pendingChunkFileIdRef = null; // Effacer la référence
     this.recentlyCreatedFilesRef.delete(fileId); // Nettoyer des fichiers récemment créés
     
-    // Mettre à jour le statut du fichier
-    this.incomingFiles = this.incomingFiles.map(file => {
-      if (file.id === fileId) {
-        return { ...file, status: 'completed' };
-      }
-      return file;
-    });
+    // Trouver le fichier pour calculer le progrès final
+    const fileIndex = this.incomingFiles.findIndex(f => f.id === fileId);
+    if (fileIndex !== -1) {
+      const file = this.incomingFiles[fileIndex];
+      console.log(`Finalisation du fichier ${file.name} avec taille ${file.receivedSize} octets`);
+    
+      // Vibration de notification pour indiquer la réception complète
+      vibrateNotification();
       
-    // Vérifier et nettoyer les fichiers dupliqués
-    setTimeout(() => this.cleanupDuplicateFiles(), 500);
+      // Mettre à jour le statut du fichier à 100% et marquer comme complété
+      this.incomingFiles = this.incomingFiles.map(file => {
+        if (file.id === fileId) {
+          const updatedFile: IncomingFile = { 
+            ...file, 
+            status: 'completed' as 'completed',
+            progress: 100 // S'assurer que la progression est bien à 100%
+          };
+          console.log(`Fichier ${file.name} complet et prêt à être téléchargé`);
+          return updatedFile;
+        }
+        return file;
+      });
+        
+      // Forcer une mise à jour de l'interface
+      setTimeout(() => {
+        this.setIncomingFiles([...this.incomingFiles]);
+        // Vérifier et nettoyer les fichiers dupliqués
+        this.cleanupDuplicateFiles();
+      }, 200);
+    } else {
+      console.warn(`Fichier ${fileId} non trouvé lors de la finalisation`);
+      // Vérifier et nettoyer les fichiers dupliqués quand même
+      setTimeout(() => this.cleanupDuplicateFiles(), 200);
+    }
   }
 
   // Envoyer un fichier à un appareil
@@ -435,77 +476,164 @@ export class FileTransferService {
       size: file.size,
       from: this.deviceName // Envoyer le nom de l'appareil au lieu de l'ID
     };
-    this.peerService.sendData(targetDeviceId, JSON.stringify(fileInfo));
-
-    // Lire et envoyer le fichier par chunks
-    const chunkSize = 16384; // 16KB chunks
-    const reader = new FileReader();
-    let offset = 0;
-
-    const updateProgress = (progress: number) => {
-      this.fileTransfers = this.fileTransfers.map(t => 
-        t.id === transferId ? { ...t, progress, status: 'transferring' } : t
-      );
-    };
-
-    // Ajouter un petit délai entre l'envoi des chunks pour éviter de surcharger la connexion
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-    const readSlice = async (o: number) => {
-      const slice = file.slice(o, o + chunkSize);
-      reader.readAsArrayBuffer(slice);
-    };
-
-    reader.onload = async (e) => {
-      if (!e.target?.result) return;
-      
-      try {
-        // D'abord notifier à quel fichier ce chunk appartient
-        this.peerService.sendData(targetDeviceId, JSON.stringify({ 
-          type: 'file-chunk', 
-          id: transferId
-        }));
-        
-        // Attendre un petit moment pour s'assurer que le message est traité
-        await delay(10);
-        
-        // Envoyer les données binaires
-        this.peerService.sendData(targetDeviceId, e.target.result);
-        
-        offset += (e.target.result as ArrayBuffer).byteLength;
-        const progress = Math.min(100, Math.floor((offset / file.size) * 100));
-        updateProgress(progress);
-        
-        if (offset < file.size) {
-          // Ajouter un petit délai entre les chunks
-          await delay(20);
-          await readSlice(offset);
-        } else {
-          // Transfert terminé
-          this.fileTransfers = this.fileTransfers.map(t => 
-            t.id === transferId ? { ...t, progress: 100, status: 'completed' } : t
-          );
-          
-          // Ajouter un délai avant d'envoyer le message de complétion
-          await delay(50);
-          this.peerService.sendData(targetDeviceId, JSON.stringify({ type: 'file-complete', id: transferId }));
-        }
-      } catch (error) {
-        console.error('Error sending file chunk:', error);
-        this.fileTransfers = this.fileTransfers.map(t => 
-          t.id === transferId ? { ...t, status: 'failed' } : t
-        );
+    
+    try {
+      // Envoyer les informations de fichier avec une tentative de reconnexion
+      const infoSent = await this.sendWithRetry(targetDeviceId, JSON.stringify(fileInfo), 3);
+      if (!infoSent) {
+        throw new Error("Impossible d'envoyer les informations du fichier après plusieurs tentatives");
       }
-    };
-
-    reader.onerror = () => {
-      console.error('Error reading file');
+  
+      // Lire et envoyer le fichier par chunks
+      const chunkSize = AppConfig.fileTransfer.chunkSize;
+      const reader = new FileReader();
+      let offset = 0;
+  
+      const updateProgress = (progress: number) => {
+        this.fileTransfers = this.fileTransfers.map(t => 
+          t.id === transferId ? { ...t, progress, status: 'transferring' } : t
+        );
+      };
+  
+      // Fonction pour lire une tranche du fichier
+      const readSlice = async (o: number): Promise<boolean> => {
+        return new Promise((resolve) => {
+          try {
+            const slice = file.slice(o, Math.min(o + chunkSize, file.size));
+            reader.onload = async (e) => {
+              if (!e.target?.result) {
+                resolve(false);
+                return;
+              }
+              
+              try {
+                // Notifier à quel fichier ce chunk appartient
+                const chunkInfo = JSON.stringify({ 
+                  type: 'file-chunk', 
+                  id: transferId,
+                  index: Math.floor(o / chunkSize), // Ajouter un index pour faciliter la reprise
+                  offset: o,
+                  size: (e.target.result as ArrayBuffer).byteLength
+                });
+                
+                // Envoyer l'information du chunk, puis le chunk lui-même
+                const infoSent = await this.sendWithRetry(targetDeviceId, chunkInfo, 2);
+                if (!infoSent) {
+                  console.error(`Échec d'envoi d'informations pour le chunk à l'offset ${o}`);
+                  resolve(false);
+                  return;
+                }
+                
+                // Petit délai pour éviter la saturation
+                await new Promise(r => setTimeout(r, 5));
+                
+                // Envoyer les données avec réessais
+                const chunkSent = await this.sendWithRetry(
+                  targetDeviceId, 
+                  e.target.result, 
+                  2
+                );
+                
+                if (!chunkSent) {
+                  console.error(`Échec d'envoi du chunk à l'offset ${o}`);
+                  resolve(false);
+                  return;
+                }
+                
+                offset += (e.target.result as ArrayBuffer).byteLength;
+                const progress = Math.min(100, Math.floor((offset / file.size) * 100));
+                updateProgress(progress);
+                
+                // Succès pour ce chunk
+                resolve(true);
+              } catch (error) {
+                console.error(`Erreur lors de l'envoi du chunk à l'offset ${o}:`, error);
+                resolve(false);
+              }
+            };
+            
+            reader.onerror = () => {
+              console.error(`Erreur de lecture du fichier à l'offset ${o}`);
+              resolve(false);
+            };
+            
+            reader.readAsArrayBuffer(slice);
+          } catch (err) {
+            console.error(`Erreur lors de la création du slice à l'offset ${o}:`, err);
+            resolve(false);
+          }
+        });
+      };
+      
+      // Envoyer tous les chunks avec gestion d'échec et de reprise
+      while (offset < file.size) {
+        const success = await readSlice(offset);
+        if (!success) {
+          // Attendre un peu avant de réessayer le même chunk
+          await new Promise(r => setTimeout(r, 1000));
+          continue; // Réessayer le même chunk
+        }
+        
+        // Ajouter un petit délai entre les chunks pour les gros fichiers
+        if (file.size > 10 * 1024 * 1024) { // Plus de 10MB
+          await new Promise(r => setTimeout(r, 10));
+        }
+      }
+      
+      // Transfert terminé avec succès
+      this.fileTransfers = this.fileTransfers.map(t => 
+        t.id === transferId ? { ...t, progress: 100, status: 'completed' } : t
+      );
+      
+      // Vibration de succès quand le transfert est terminé
+      vibrateSuccess();
+      
+      // Informer l'autre appareil que le transfert est terminé
+      await this.sendWithRetry(
+        targetDeviceId, 
+        JSON.stringify({ type: 'file-complete', id: transferId }), 
+        5 // Plus de tentatives pour s'assurer que le message de fin passe
+      );
+      
+    } catch (error) {
+      console.error('Error sending file:', error);
+      // Vibration d'erreur en cas d'échec
+      vibrateError();
+      
       this.fileTransfers = this.fileTransfers.map(t => 
         t.id === transferId ? { ...t, status: 'failed' } : t
       );
-    };
-
-    readSlice(0);
+    }
+  }
+  
+  // Méthode utilitaire pour envoyer des données avec plusieurs tentatives
+  private async sendWithRetry(targetDeviceId: string, data: any, maxRetries: number = 3): Promise<boolean> {
+    let attempts = 0;
+    
+    while (attempts < maxRetries) {
+      try {
+        if (!this.peerService.isConnectedTo(targetDeviceId)) {
+          console.log(`La connexion à ${targetDeviceId} a été perdue, tentative de reconnexion...`);
+          // Attendre que la reconnexion se fasse
+          await new Promise(r => setTimeout(r, 1000 * (attempts + 1)));
+          attempts++;
+          continue;
+        }
+        
+        const sent = this.peerService.sendData(targetDeviceId, data);
+        if (sent) return true;
+        
+        // Si l'envoi a échoué mais que la connexion est toujours active
+        console.log(`Échec d'envoi, tentative ${attempts + 1}/${maxRetries}...`);
+        await new Promise(r => setTimeout(r, 500 * (attempts + 1)));
+      } catch (err) {
+        console.error(`Erreur lors de l'envoi, tentative ${attempts + 1}/${maxRetries}:`, err);
+      }
+      
+      attempts++;
+    }
+    
+    return false;
   }
 
   // Nettoyer les fichiers de transfert en échec

@@ -9,7 +9,7 @@ interface DeviceAvatarProps {
   className?: string;
 }
 
-export const DeviceAvatar = ({ deviceId, style = 'lorelei', size = 40, className = '' }: DeviceAvatarProps) => {
+export const DeviceAvatar = ({ deviceId, style = 'glass', size = 40, className = '' }: DeviceAvatarProps) => {
   const [avatar, setAvatar] = useState<string>('');
   
   useEffect(() => {

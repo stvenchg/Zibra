@@ -4,11 +4,20 @@ import type { Device } from '../types/connection.types';
 // Configuration des serveurs STUN/TURN
 const DEFAULT_ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun3.l.google.com:19302' },
+  { urls: 'stun:stun4.l.google.com:19302' },
   { urls: 'stun:global.stun.twilio.com:3478' },
   {
     urls: 'turn:numb.viagenie.ca',
     username: 'webrtc@live.com',
     credential: 'muazkh'
+  },
+  {
+    urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
+    username: 'webrtc',
+    credential: 'webrtc'
   }
 ];
 
@@ -191,13 +200,28 @@ export class PeerConnectionService {
       return;
     }
 
-    // Si on a déjà une connexion avec cet appareil, on la ferme
+    // Si on est déjà connecté, ne rien faire
+    if (this.peers[targetDeviceId]?.isConnected()) {
+      console.log('Already connected to', targetDeviceId);
+      return;
+    }
+
+    // Si on a déjà une connexion avec cet appareil, la fermer
     if (this.peers[targetDeviceId]) {
       console.log('Closing existing connection to', targetDeviceId);
       this.peers[targetDeviceId].close();
       delete this.peers[targetDeviceId];
+      
+      // Forcer un court délai avant de recréer la connexion
+      // pour s'assurer que les ressources sont libérées
+      setTimeout(() => this.initiateNewConnection(targetDeviceId), 500);
+    } else {
+      this.initiateNewConnection(targetDeviceId);
     }
-
+  }
+  
+  // Créer une nouvelle connexion
+  private initiateNewConnection(targetDeviceId: string) {
     console.log('Connecting to device:', targetDeviceId);
     try {
       const peer = new WebRTCConnection(true);
@@ -229,7 +253,7 @@ export class PeerConnectionService {
       
       peer.on('error', (err) => {
         console.error('Connection error:', err);
-        this.handleConnectionFailure(targetDeviceId, 'error: ' + err.message);
+        this.handleConnectionFailure(targetDeviceId, 'error: ' + (err.message || String(err)));
       });
       
       peer.on('data', this.dataCallback);
@@ -253,6 +277,11 @@ export class PeerConnectionService {
     }
     
     try {
+      // Pour les gros messages binaires, vérifier s'ils sont trop volumineux
+      if (data instanceof ArrayBuffer && data.byteLength > 262144) {
+        console.warn(`Message trop volumineux (${data.byteLength} octets), fragmentation conseillée`);
+      }
+      
       peer.send(data);
       return true;
     } catch (error) {

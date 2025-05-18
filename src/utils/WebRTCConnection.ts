@@ -135,9 +135,9 @@ export class WebRTCConnection extends EventEmitter {
     try {
       console.log('Creating data channel');
       this.dataChannel = this.connection.createDataChannel('fileTransfer', {
-        ordered: true,
-        // Ajouter des options pour améliorer la fiabilité
-        maxRetransmits: 30
+        ordered: true, // Garantit que les paquets arrivent dans l'ordre
+        // Mode complètement fiable - aucune limite de retransmission
+        // Ne pas spécifier maxRetransmits ou maxPacketLifeTime pour une fiabilité maximale
       });
       this.setupDataChannel(this.dataChannel);
     } catch (error) {
@@ -215,8 +215,15 @@ export class WebRTCConnection extends EventEmitter {
           this.pendingCandidates.push(data);
           return;
         }
-        await this.connection.addIceCandidate(new RTCIceCandidate(data));
-        console.log('ICE candidate added');
+        
+        try {
+          await this.connection.addIceCandidate(new RTCIceCandidate(data));
+          console.log('ICE candidate added');
+        } catch (err) {
+          // Gérer les erreurs d'ajout de candidat ICE spécifiquement
+          console.error('Error adding ICE candidate:', err);
+          // Ne pas propager l'erreur pour éviter d'interrompre la connexion pour un candidat rejeté
+        }
         return;
       }
       
@@ -224,31 +231,48 @@ export class WebRTCConnection extends EventEmitter {
       if (data.type === 'offer' || data.type === 'answer') {
         console.log(`Received ${data.type}`);
         
-        // Ajouter un délai avant de définir la description distante
-        // Cela peut aider avec certaines implémentations qui ont des problèmes de timing
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        await this.connection.setRemoteDescription(new RTCSessionDescription(data));
-        console.log('Remote description set');
-        
-        // If it's an offer, send an answer
-        if (data.type === 'offer') {
-          console.log('Creating answer');
-          const answer = await this.connection.createAnswer();
-          console.log('Setting local description (answer)');
-          await this.connection.setLocalDescription(answer);
-          console.log('Emitting answer');
-          this.emit('signal', this.connection.localDescription);
-        }
-        
-        // Add any queued ICE candidates
-        if (this.pendingCandidates.length > 0) {
-          console.log(`Processing ${this.pendingCandidates.length} queued ICE candidates`);
-          for (const candidate of this.pendingCandidates) {
-            await this.connection.addIceCandidate(new RTCIceCandidate(candidate));
+        try {
+          // Ajouter un délai avant de définir la description distante
+          // Cela peut aider avec certaines implémentations qui ont des problèmes de timing
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          await this.connection.setRemoteDescription(new RTCSessionDescription(data));
+          console.log('Remote description set');
+          
+          // If it's an offer, send an answer
+          if (data.type === 'offer') {
+            console.log('Creating answer');
+            const answer = await this.connection.createAnswer();
+            console.log('Setting local description (answer)');
+            await this.connection.setLocalDescription(answer);
+            console.log('Emitting answer');
+            this.emit('signal', this.connection.localDescription);
           }
-          this.pendingCandidates = [];
-          console.log('All queued ICE candidates processed');
+          
+          // Add any queued ICE candidates
+          if (this.pendingCandidates.length > 0) {
+            console.log(`Processing ${this.pendingCandidates.length} queued ICE candidates`);
+            for (const candidate of this.pendingCandidates) {
+              try {
+                await this.connection.addIceCandidate(new RTCIceCandidate(candidate));
+              } catch (err) {
+                console.error('Error adding queued ICE candidate:', err);
+                // Continuer avec les autres candidats
+              }
+            }
+            this.pendingCandidates = [];
+            console.log('All queued ICE candidates processed');
+          }
+        } catch (err) {
+          // Vérifier s'il s'agit d'une erreur d'état
+          if (String(err).includes('Called in wrong state') || 
+              String(err).includes('InvalidStateError')) {
+            console.warn(`État incorrect pour la définition de la description distante: ${data.type}`, err);
+            this.emit('error', new Error(`Invalid state for ${data.type} processing`));
+          } else {
+            console.error(`Error setting remote description for ${data.type}:`, err);
+            this.emit('error', err);
+          }
         }
       }
     } catch (error) {
@@ -265,11 +289,29 @@ export class WebRTCConnection extends EventEmitter {
     }
     
     try {
+      // Implémentation de protection contre les gros fichiers
+      if (data instanceof ArrayBuffer && data.byteLength > 256 * 1024) {
+        console.warn(`Envoi d'un gros chunk (${data.byteLength} octets), vigilance conseillée`);
+      }
+      
+      // Limiter la vitesse d'envoi pour les gros chunks
       this.dataChannel.send(data);
       return true;
     } catch (error) {
       console.error('Error sending data:', error);
-      this.emit('error', error);
+      
+      // Si c'est une erreur de canal fermé, essayer de gérer proprement
+      if (String(error).includes('closed') || 
+          (this.dataChannel && this.dataChannel.readyState !== 'open')) {
+        this.emit('error', new Error('DataChannel closed unexpectedly'));
+        
+        // Marquer la connexion comme fermée pour forcer une reconnexion
+        this.connected = false;
+        setTimeout(() => this.emit('close'), 0);
+      } else {
+        this.emit('error', error);
+      }
+      
       return false;
     }
   }

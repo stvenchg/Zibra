@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { DeviceAvatar } from './DeviceAvatar';
 import { Loader2, Share2, RefreshCw } from 'lucide-react';
+import { vibrateStrong, vibrateError } from '../utils/vibration';
 
 export const DeviceList = () => {
   const { availableDevices, connectToDevice, isConnectedTo, selectedFiles, sendFiles } = useConnection();
@@ -18,6 +19,7 @@ export const DeviceList = () => {
     console.log('Envoi de fichiers vers l\'appareil:', deviceId);
     
     if (selectedFiles.length === 0) {
+      vibrateError(); // Vibration d'erreur si aucun fichier sélectionné
       addToast({
         type: 'warning',
         title: 'Aucun fichier sélectionné',
@@ -27,6 +29,7 @@ export const DeviceList = () => {
       return;
     }
     
+    vibrateStrong(); // Vibration forte pour indiquer le début du transfert
     setConnectingDeviceId(deviceId);
     
     // Increment the attempt counter
@@ -36,7 +39,7 @@ export const DeviceList = () => {
     }));
     
     // Send files to the device
-    try {
+    try {      
       sendFiles(selectedFiles, deviceId);
       console.log('Transfert de fichier initié');
       
@@ -46,6 +49,7 @@ export const DeviceList = () => {
       console.error('Échec de l\'envoi des fichiers:', error);
       setConnectingDeviceId(null);
       
+      vibrateError(); // Vibration d'erreur si échec du transfert
       addToast({
         type: 'error',
         title: 'Échec de connexion',
@@ -60,6 +64,7 @@ export const DeviceList = () => {
       setConnectingDeviceId(prev => {
         if (prev === deviceId) {
           if (!isConnectedTo(deviceId)) {
+            vibrateError(); // Vibration d'erreur si délai dépassé
             addToast({
               type: 'error',
               title: 'Délai d\'attente dépassé',

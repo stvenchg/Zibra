@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sun, Moon } from 'lucide-react';
 import { useToast } from './ui/toast';
+import { vibrateLight } from '../utils/vibration';
 
 type Theme = 'light' | 'dark';
 
@@ -54,6 +55,8 @@ export const ThemeToggle = () => {
   
   // Changer le thème
   const toggleTheme = () => {
+    vibrateLight(); // Vibration légère lors du changement de thème
+    
     const newTheme = theme === 'light' ? 'dark' : 'light';
     console.log('Changement de thème vers:', newTheme);
     
