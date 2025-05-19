@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --radius: 0.3rem;
   --background: oklch(1 0 0);
@@ -186,4 +188,27 @@ html.dark body {
   );
   background-size: 200% 100%;
   animation: progress-flow 2s ease infinite;
+}
+
+/* Animation de pulse qui s'étend */
+@keyframes pulse-expand {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+    box-shadow: 0 0 0 0 rgba(200, 200, 200, 0.4);
+  }
+  70% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 0 15px rgba(200, 200, 200, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.7;
+    box-shadow: 0 0 0 0 rgba(200, 200, 200, 0);
+  }
+}
+
+.animate-pulse-expand {
+  animation: pulse-expand 2s infinite;
 }

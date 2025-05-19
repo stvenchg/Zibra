@@ -2,45 +2,45 @@ import { uniqueNamesGenerator, adjectives, colors, animals, names } from 'unique
 import type { Config } from 'unique-names-generator';
 
 /**
- * Génère un nom d'appareil aléatoire au format "adjectif-nom"
- * Exemples: "jubilant-intuition", "happy-cat", "brave-tiger"
+ * Génère un nom d'appareil aléatoire au format "Adjectif Nom"
+ * Exemples: "Jubilant Intuition", "Happy Cat", "Brave Tiger"
  */
 export const generateDeviceName = (): string => {
   const nameConfig: Config = {
     dictionaries: [adjectives, animals],
-    separator: '-',
+    separator: ' ',
     length: 2,
-    style: 'lowerCase'
+    style: 'capital'
   };
   
   return uniqueNamesGenerator(nameConfig);
 };
 
 /**
- * Génère un nom d'appareil aléatoire au format "couleur-animal"
- * Exemples: "red-panda", "blue-dolphin", "green-elephant"
+ * Génère un nom d'appareil aléatoire au format "Couleur Animal"
+ * Exemples: "Red Panda", "Blue Dolphin", "Green Elephant"
  */
 export const generateColorfulDeviceName = (): string => {
   const nameConfig: Config = {
     dictionaries: [colors, animals],
-    separator: '-',
+    separator: ' ',
     length: 2,
-    style: 'lowerCase'
+    style: 'capital'
   };
   
   return uniqueNamesGenerator(nameConfig);
 };
 
 /**
- * Génère un nom d'appareil aléatoire au format "nom-adjectif"
- * Exemples: "alice-jubilant", "bob-brave", "charlie-happy"
+ * Génère un nom d'appareil aléatoire au format "Nom Adjectif"
+ * Exemples: "Alice Jubilant", "Bob Brave", "Charlie Happy"
  */
 export const generatePersonalDeviceName = (): string => {
   const nameConfig: Config = {
     dictionaries: [names, adjectives],
-    separator: '-',
+    separator: ' ',
     length: 2,
-    style: 'lowerCase'
+    style: 'capital'
   };
   
   return uniqueNamesGenerator(nameConfig);

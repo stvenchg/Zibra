@@ -126,27 +126,6 @@ export const FileSelection = () => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
   };
-
-  const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    const colorClass = {
-      pdf: 'text-red-500',
-      doc: 'text-blue-500',
-      docx: 'text-blue-500',
-      xls: 'text-green-500',
-      xlsx: 'text-green-500',
-      jpg: 'text-yellow-500',
-      jpeg: 'text-yellow-500',
-      png: 'text-yellow-500',
-      gif: 'text-purple-500',
-      mp3: 'text-pink-500',
-      mp4: 'text-pink-500',
-      zip: 'text-orange-500',
-      rar: 'text-orange-500',
-    }[extension as string] || 'text-gray-500';
-    
-    return <FileIcon className={`shrink-0 h-5 w-5 ${colorClass}`} />;
-  };
   
   const handleRemoveFile = (fileId: string) => {
     vibrateLight();
@@ -174,7 +153,7 @@ export const FileSelection = () => {
                   className="flex items-center justify-between bg-muted/40 p-2 rounded-md hover:bg-muted/60 transition-colors"
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {getFileIcon(file.name)}
+                    <FileIcon className="shrink-0 h-5 w-5 text-muted-foreground mr-1" />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{file.name}</div>
                       <div className="text-xs text-muted-foreground">{formatSize(file.size)}</div>

@@ -4,7 +4,7 @@ import { useToast } from './ui/toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DeviceAvatar } from './DeviceAvatar';
-import { Loader2, Share2, RefreshCw } from 'lucide-react';
+import { Loader2, Share2, RefreshCw, Search, Wifi } from 'lucide-react';
 import { vibrateStrong, vibrateError } from '../utils/vibration';
 
 export const DeviceList = () => {
@@ -120,22 +120,18 @@ export const DeviceList = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Appareils disponibles</CardTitle>
-          <CardDescription>Aucun appareil trouvé sur votre réseau</CardDescription>
         </CardHeader>
         <CardContent className="text-center py-8 space-y-4">
           <div className="flex justify-center">
-            <div className="p-4 rounded-full bg-muted/50">
-              <Share2 className="h-10 w-10 text-muted-foreground" />
+            <div className="p-6 rounded-full bg-muted/20 animate-pulse-expand relative">
+              <div className="absolute inset-0 rounded-full bg-primary/10 animate-pulse opacity-75"></div>
+              <Wifi className="h-10 w-10 text-muted-foreground" />
             </div>
           </div>
-          <p className="text-muted-foreground">Aucun appareil trouvé</p>
+          <p className="text-muted-foreground mt-4">Recherche en cours</p>
           <p className="text-sm text-muted-foreground flex items-center gap-1 justify-center">
             <span>Les appareils connectés au même réseau apparaîtront automatiquement ici.</span>
           </p>
-          <div className="flex items-center gap-2 justify-center text-xs text-muted-foreground mt-4">
-            <RefreshCw className="h-3 w-3 animate-spin" />
-            <span>Recherche en cours...</span>
-          </div>
         </CardContent>
       </Card>
     );
