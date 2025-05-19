@@ -150,3 +150,40 @@ html.dark body {
 .dark .light-only {
   display: none;
 }
+
+/* Animation de la barre de progression */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes progress-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 0.8s infinite;
+}
+
+.animate-progress-flow {
+  background: linear-gradient(
+    270deg,
+    var(--primary),
+    color-mix(in oklch, var(--primary), var(--primary-foreground) 30%),
+    var(--primary)
+  );
+  background-size: 200% 100%;
+  animation: progress-flow 2s ease infinite;
+}

@@ -59,7 +59,7 @@ export const TransferList = () => {
       <CardContent>
         <ul className="space-y-3">
           {[...fileTransfers].reverse().map(transfer => (
-            <li key={transfer.id} className="p-3 bg-muted/30 rounded-md">
+            <li key={transfer.id} className="p-3 bg-muted/30 rounded-md hover:bg-muted/40 transition-all duration-200">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <div className="font-medium">{transfer.fileName}</div>
@@ -73,7 +73,11 @@ export const TransferList = () => {
               </div>
               
               <div className="space-y-1">
-                <Progress value={transfer.progress} className="h-2" />
+                <Progress 
+                  value={transfer.progress} 
+                  className="h-2" 
+                  animated={transfer.status === 'transferring'} 
+                />
                 <div className="flex justify-end text-xs text-muted-foreground">
                   {transfer.status === 'completed' 
                     ? 'Terminé' 

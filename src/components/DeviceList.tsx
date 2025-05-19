@@ -93,11 +93,11 @@ export const DeviceList = () => {
     
     switch (status) {
       case 'connected':
-        return 'Envoyer les fichiers';
+        return 'Tranférer';
       case 'connecting':
         return 'Connexion...';
       default:
-        return attempts > 0 ? 'Réessayer' : 'Envoyer les fichiers';
+        return attempts > 0 ? 'Réessayer' : 'Tranférer';
     }
   }, [getConnectionStatus, connectionAttempts]);
 

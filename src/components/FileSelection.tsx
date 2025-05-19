@@ -216,8 +216,6 @@ export const FileSelection = () => {
               </Button>
             </div>
             
-            <Progress value={(selectedFiles.length / AppConfig.fileTransfer.maxFilesPerTransfer) * 100} className="h-1.5" />
-            
             {selectedFiles.length < AppConfig.fileTransfer.maxFilesPerTransfer && (
               <div 
                 className={`mt-4 border-2 border-dashed rounded-lg p-6 text-center ${

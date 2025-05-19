@@ -72,7 +72,7 @@ export const ReceivedFiles = () => {
       <CardContent>
         <ul className="space-y-3">
           {[...validFiles].reverse().map((file, index) => (
-            <li key={`${file.id}-${index}`} className="p-3 bg-muted/30 rounded-md">
+            <li key={`${file.id}-${index}`} className="p-3 bg-muted/30 rounded-md hover:bg-muted/40 transition-all duration-200">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <div className="font-medium">{file.name}</div>
@@ -101,7 +101,11 @@ export const ReceivedFiles = () => {
               
               {file.status === 'receiving' && (
                 <div className="space-y-1">
-                  <Progress value={file.progress} className="h-2" />
+                  <Progress 
+                    value={file.progress} 
+                    className="h-2" 
+                    animated={true}
+                  />
                   <div className="flex justify-end text-xs text-muted-foreground">
                     {file.progress}%
                   </div>
