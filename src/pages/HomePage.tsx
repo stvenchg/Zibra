@@ -29,7 +29,7 @@ export const HomePage = () => {
       addToast({
         type: 'success',
         title: 'Nom modifié',
-        description: `Votre appareil s'affiche maintenant comme "${tempName}".`,
+        description: `Votre appareil s'affiche maintenant comme "${tempName}". Ce nom est sauvegardé pour vos prochaines connexions.`,
         duration: 3000
       });
     }
@@ -46,7 +46,7 @@ export const HomePage = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4">
-                <DeviceAvatar deviceId={deviceId} size={56} />
+                <DeviceAvatar deviceId={deviceId} deviceName={deviceName} size={56} />
                 
                 {editingName ? (
                   <div className="flex items-center gap-2 flex-1">

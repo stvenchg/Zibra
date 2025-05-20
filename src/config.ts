@@ -2,7 +2,6 @@
  * Zibra Configuration File
  * This file contains all configurable settings for the application
  */
-import { generateDeviceName } from './utils/namegenerator';
 
 export const AppConfig = {
   // Connection Settings
@@ -23,7 +22,6 @@ export const AppConfig = {
   
   // UI Settings
   ui: {
-    defaultDeviceName: generateDeviceName(),
     theme: {
       primary: '#4361ee',
       secondary: '#3f37c9',

@@ -10,27 +10,30 @@ export type AvatarStyle = 'avataaars' | 'bottts' | 'lorelei' | 'miniavs' | 'pers
  * @returns URL de données de l'avatar SVG
  */
 export const generateAvatar = (seed: string, style: AvatarStyle = 'personas'): string => {
+  // S'assurer qu'on a toujours une seed valide
+  const validSeed = seed?.trim() ? seed : 'default-' + Math.random().toString(36).substring(2, 7);
+  
   let avatar;
   
   switch (style) {
     case 'avataaars':
-      avatar = createAvatar(avataaars, { seed });
+      avatar = createAvatar(avataaars, { seed: validSeed });
       break;
     case 'bottts':
-      avatar = createAvatar(bottts, { seed });
+      avatar = createAvatar(bottts, { seed: validSeed });
       break;
     case 'lorelei':
-      avatar = createAvatar(lorelei, { seed });
+      avatar = createAvatar(lorelei, { seed: validSeed });
       break;
     case 'miniavs':
-      avatar = createAvatar(miniavs, { seed });
+      avatar = createAvatar(miniavs, { seed: validSeed });
       break;
     case 'glass':
-      avatar = createAvatar(glass, { seed });
+      avatar = createAvatar(glass, { seed: validSeed });
       break;
     case 'personas':
     default:
-      avatar = createAvatar(personas, { seed });
+      avatar = createAvatar(personas, { seed: validSeed });
       break;
   }
   

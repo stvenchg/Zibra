@@ -5,12 +5,36 @@ import { SocketService } from '../services/socket.service';
 import { PeerConnectionService } from '../services/peerConnection.service';
 import { FileTransferService } from '../services/fileTransfer.service';
 import { AppConfig } from '../config';
+import { generateDeviceName } from '../utils/namegenerator';
 
 export const ConnectionContext = createContext<ConnectionContextType | null>(null);
 
+// Constante pour la clé de stockage du nom d'appareil
+const DEVICE_NAME_STORAGE_KEY = 'zibra_device_name';
+
+// Fonction pour récupérer le nom d'appareil sauvegardé ou en générer un nouveau
+const getInitialDeviceName = (): string => {
+  // Vérifier s'il existe déjà un nom dans le localStorage
+  const savedName = localStorage.getItem(DEVICE_NAME_STORAGE_KEY);
+  
+  if (savedName) {
+    console.log('Nom d\'appareil récupéré du localStorage:', savedName);
+    return savedName;
+  }
+  
+  // Générer un nouveau nom aléatoire
+  const newName = generateDeviceName();
+  console.log('Nouveau nom d\'appareil généré:', newName);
+  
+  // Sauvegarder dans localStorage pour les prochaines visites
+  localStorage.setItem(DEVICE_NAME_STORAGE_KEY, newName);
+  
+  return newName;
+};
+
 export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   const [deviceId, setDeviceId] = useState<string>('');
-  const [deviceName, setDeviceName] = useState<string>(AppConfig.ui.defaultDeviceName);
+  const [deviceName, setDeviceName] = useState<string>(getInitialDeviceName());
   const [availableDevices, setAvailableDevices] = useState<Device[]>([]);
   const [fileTransfers, setFileTransfers] = useState<FileTransfer[]>([]);
   const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
@@ -101,6 +125,9 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     socketServiceRef.current?.updateDeviceName(name);
     peerServiceRef.current?.updateDeviceName(name);
     fileTransferServiceRef.current?.updateDeviceName(name);
+    
+    // Sauvegarder le nouveau nom dans localStorage
+    localStorage.setItem(DEVICE_NAME_STORAGE_KEY, name);
   };
 
   // Se connecter à un appareil

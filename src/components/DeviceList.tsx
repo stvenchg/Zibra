@@ -206,7 +206,7 @@ export const DeviceList = () => {
       case 'connecting':
         return 'Connexion...';
       default:
-        return attempts > 0 ? 'Réessayer' : 'Tranférer';
+        return attempts > 0 ? 'Réessayer' : 'Transférer';
     }
   }, [getConnectionStatus, connectionAttempts, hasActiveTransferTo]);
 
@@ -290,7 +290,7 @@ export const DeviceList = () => {
                     isConnecting ? 'bg-amber-500 animate-pulse' : 
                     'bg-orange-500'
                   }`} />
-                  <DeviceAvatar deviceId={device.id} size={36} />
+                  <DeviceAvatar deviceId={device.id} deviceName={device.name} size={36} />
                   <div>
                     <div className="font-medium">{device.name}</div>
                     <div className="text-xs text-muted-foreground flex items-center gap-1">
