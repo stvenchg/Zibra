@@ -40,7 +40,7 @@ export const FileTransfer = ({ targetDeviceId }: { targetDeviceId: string }) => 
     return (
       <Card className="text-center p-4">
         <CardContent>
-          <p className="text-muted-foreground">Appareil non disponible</p>
+          <p className="text-muted-foreground">Device not available</p>
         </CardContent>
       </Card>
     );
@@ -49,7 +49,7 @@ export const FileTransfer = ({ targetDeviceId }: { targetDeviceId: string }) => 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Envoyer à {targetDevice.name}</CardTitle>
+        <CardTitle className="text-xl">Send to {targetDevice.name}</CardTitle>
       </CardHeader>
       
       <CardContent>
@@ -63,14 +63,14 @@ export const FileTransfer = ({ targetDeviceId }: { targetDeviceId: string }) => 
         >
           <div className="flex flex-col items-center gap-3">
             <Upload className="h-12 w-12 text-muted-foreground/70" />
-            <p className="text-muted-foreground">Glissez et déposez un fichier ici</p>
-            <p className="text-xs text-muted-foreground">ou</p>
+            <p className="text-muted-foreground">Drag and drop a file here</p>
+            <p className="text-xs text-muted-foreground">or</p>
             <Button
               variant="outline"
               className="relative"
               onClick={() => document.getElementById('file-select')?.click()}
             >
-              Sélectionner un fichier
+              Select a file
               <input 
                 id="file-select"
                 type="file" 

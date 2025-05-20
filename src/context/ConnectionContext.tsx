@@ -9,24 +9,24 @@ import { generateDeviceName } from '../utils/namegenerator';
 
 export const ConnectionContext = createContext<ConnectionContextType | null>(null);
 
-// Constante pour la clé de stockage du nom d'appareil
+// Constant for device name storage key
 const DEVICE_NAME_STORAGE_KEY = 'zibra_device_name';
 
-// Fonction pour récupérer le nom d'appareil sauvegardé ou en générer un nouveau
+// Function to retrieve the stored device name or generate a new one
 const getInitialDeviceName = (): string => {
-  // Vérifier s'il existe déjà un nom dans le localStorage
+  // Check if a name already exists in localStorage
   const savedName = localStorage.getItem(DEVICE_NAME_STORAGE_KEY);
   
   if (savedName) {
-    console.log('Nom d\'appareil récupéré du localStorage:', savedName);
+    console.log('Device name retrieved from localStorage:', savedName);
     return savedName;
   }
   
-  // Générer un nouveau nom aléatoire
+  // Generate a new random name
   const newName = generateDeviceName();
-  console.log('Nouveau nom d\'appareil généré:', newName);
+  console.log('New device name generated:', newName);
   
-  // Sauvegarder dans localStorage pour les prochaines visites
+  // Save in localStorage for future visits
   localStorage.setItem(DEVICE_NAME_STORAGE_KEY, newName);
   
   return newName;
@@ -41,45 +41,45 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   const [incomingFiles, setIncomingFiles] = useState<IncomingFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   
-  // Références aux services
+  // References to services
   const socketServiceRef = useRef<SocketService | null>(null);
   const peerServiceRef = useRef<PeerConnectionService | null>(null);
   const fileTransferServiceRef = useRef<FileTransferService | null>(null);
 
-  // Initialiser les services
+  // Initialize services
   useEffect(() => {
-    // Fonction pour gérer les appareils disponibles
+    // Function to handle available devices
     const handleAvailableDevices = (devices: Device[]) => {
       setAvailableDevices(devices);
     };
     
-    // Créer le service socket
+    // Create socket service
     const socketService = new SocketService(deviceName, handleAvailableDevices);
     socketServiceRef.current = socketService;
     
-    // Se connecter au serveur de signalisation
+    // Connect to signaling server
     socketService.connect(AppConfig.connection.signalingServerUrl)
       .then((socket) => {
         console.log('Socket connected successfully');
         setDeviceId(socketService.getDeviceId());
         
-        // Fonction pour gérer les appareils connectés
+        // Function to handle connected devices
         const handleConnectedDevices = (devices: string[]) => {
           setConnectedDevices(devices);
         };
         
-        // Fonction pour gérer les données entrantes
+        // Function to handle incoming data
         const handleIncomingData = (data: any) => {
           if (fileTransferServiceRef.current) {
             fileTransferServiceRef.current.handleIncomingData(data);
             
-            // Mettre à jour l'état avec les données du service
+            // Update state with service data
             setFileTransfers(fileTransferServiceRef.current.getFileTransfers());
             setIncomingFiles(fileTransferServiceRef.current.getIncomingFiles());
           }
         };
         
-        // Créer le service de connexion P2P
+        // Create P2P connection service
         const peerService = new PeerConnectionService(
           socket,
           deviceName,
@@ -88,7 +88,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         );
         peerServiceRef.current = peerService;
         
-        // Configurer les gestionnaires d'événements pour la signalisation
+        // Set up event handlers for signaling
         socket.on('signal:offer', ({ from, signal }: { from: string, signal: any }) => {
           console.log('Relaying offer from server to peer service');
           peerService.handleIncomingConnection(from, signal);
@@ -104,7 +104,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
           peerService.handleIce(from, candidate);
         });
         
-        // Créer le service de transfert de fichiers
+        // Create file transfer service
         const fileTransferService = new FileTransferService(deviceName, peerService);
         fileTransferServiceRef.current = fileTransferService;
       })
@@ -112,35 +112,35 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         console.error('Failed to connect to socket server:', error);
       });
     
-    // Nettoyer les services lors du démontage
+    // Clean up services when unmounting
     return () => {
       peerServiceRef.current?.closeAll();
       socketServiceRef.current?.disconnect();
     };
   }, [deviceName]);
 
-  // Mettre à jour le nom de l'appareil
+  // Update device name
   const handleDeviceNameChange = (name: string) => {
     setDeviceName(name);
     socketServiceRef.current?.updateDeviceName(name);
     peerServiceRef.current?.updateDeviceName(name);
     fileTransferServiceRef.current?.updateDeviceName(name);
     
-    // Sauvegarder le nouveau nom dans localStorage
+    // Save the new name in localStorage
     localStorage.setItem(DEVICE_NAME_STORAGE_KEY, name);
   };
 
-  // Se connecter à un appareil
+  // Connect to a device
   const connectToDevice = (deviceId: string) => {
     peerServiceRef.current?.connectToDevice(deviceId);
   };
 
-  // Vérifier si on est connecté à un appareil
+  // Check if connected to a device
   const isConnectedTo = (deviceId: string): boolean => {
     return peerServiceRef.current?.isConnectedTo(deviceId) || false;
   };
 
-  // Ajouter un fichier à la liste des fichiers sélectionnés
+  // Add a file to the list of selected files
   const addSelectedFile = (file: File) => {
     if (selectedFiles.length >= AppConfig.fileTransfer.maxFilesPerTransfer) {
       console.warn(`Maximum number of files (${AppConfig.fileTransfer.maxFilesPerTransfer}) already selected`);
@@ -162,24 +162,24 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     setSelectedFiles(prev => [...prev, newFile]);
   };
   
-  // Supprimer un fichier de la liste des fichiers sélectionnés
+  // Remove a file from the list of selected files
   const removeSelectedFile = (fileId: string) => {
     setSelectedFiles(prev => prev.filter(file => file.id !== fileId));
   };
   
-  // Vider la liste des fichiers sélectionnés
+  // Clear the list of selected files
   const clearSelectedFiles = () => {
     setSelectedFiles([]);
   };
 
-  // Envoyer un fichier
+  // Send a file
   const sendFile = async (file: File, targetDeviceId: string) => {
     if (fileTransferServiceRef.current) {
       if (!isConnectedTo(targetDeviceId)) {
         console.log('Connecting to device before sending file');
         connectToDevice(targetDeviceId);
         
-        // Attendre que la connexion soit établie
+        // Wait for the connection to be established
         const waitForConnection = async (): Promise<boolean> => {
           return new Promise(resolve => {
             let attempts = 0;
@@ -209,7 +209,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  // Envoyer plusieurs fichiers
+  // Send multiple files
   const sendFiles = async (files: SelectedFile[], targetDeviceId: string) => {
     if (files.length === 0) return;
     
@@ -217,7 +217,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
       console.log('Connecting to device before sending files');
       connectToDevice(targetDeviceId);
       
-      // Attendre que la connexion soit établie
+      // Wait for the connection to be established
       const waitForConnection = async (): Promise<boolean> => {
         return new Promise(resolve => {
           let attempts = 0;
@@ -242,54 +242,54 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
       }
     }
     
-    // Traiter les fichiers un par un de façon séquentielle
+    // Process files sequentially one by one
     for (const selectedFile of files) {
       if (fileTransferServiceRef.current) {
-        console.log(`Envoi séquentiel de ${selectedFile.name} (${selectedFile.size} octets)`);
+        console.log(`Sequential sending of ${selectedFile.name} (${selectedFile.size} bytes)`);
         
         try {
-          // Envoyer le fichier actuel
+          // Send the current file
           await fileTransferServiceRef.current.sendFile(selectedFile.file, targetDeviceId);
           
-          // Mettre à jour l'interface après chaque fichier
+          // Update the interface after each file
           setFileTransfers(fileTransferServiceRef.current.getFileTransfers());
           
-          // Attendre un court instant entre chaque fichier pour stabiliser la connexion
+          // Wait a short moment between each file to stabilize the connection
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (err) {
-          console.error(`Erreur lors de l'envoi de ${selectedFile.name}:`, err);
+          console.error(`Error sending ${selectedFile.name}:`, err);
         }
       }
     }
   };
 
-  // Télécharger un fichier
+  // Download a file
   const downloadFile = (fileId: string) => {
     if (fileTransferServiceRef.current) {
       fileTransferServiceRef.current.downloadFile(fileId);
     }
   };
 
-  // Annuler un transfert de fichier
+  // Cancel a file transfer
   const cancelFileTransfer = (transferId: string) => {
     if (fileTransferServiceRef.current) {
       fileTransferServiceRef.current.cancelFileTransfer(transferId);
-      // Mettre à jour l'état avec les données du service
+      // Update state with service data
       setFileTransfers(fileTransferServiceRef.current.getFileTransfers());
     }
   };
 
-  // Synchroniser les états avec les services
+  // Synchronize states with services
   useEffect(() => {
     const updateInterval = setInterval(() => {
       if (fileTransferServiceRef.current) {
-        // Appliquer le nettoyage périodique des fichiers dupliqués
+        // Apply periodic cleanup of duplicate files
         fileTransferServiceRef.current.cleanupDuplicateFiles();
         
-        // Vérifier les transferts de fichiers en échec
+        // Check for failed file transfers
         fileTransferServiceRef.current.cleanupStalledTransfers();
         
-        // Mettre à jour les états
+        // Update states
         setFileTransfers(fileTransferServiceRef.current.getFileTransfers());
         setIncomingFiles(fileTransferServiceRef.current.getIncomingFiles());
       }
@@ -298,7 +298,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     return () => clearInterval(updateInterval);
   }, []);
 
-  // Méthode pour exposer les services aux hooks avancés
+  // Method to expose services to advanced hooks
   const getServices = useCallback(() => {
     return {
       socketService: socketServiceRef.current,

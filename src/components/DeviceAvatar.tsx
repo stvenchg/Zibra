@@ -24,35 +24,35 @@ export const DeviceAvatar = ({
   const { deviceName: currentDeviceName } = useConnection();
   
   useEffect(() => {
-    // Déterminer quelle seed utiliser pour générer l'avatar
+    // Determine which seed to use for avatar generation
     let seed = '';
     
-    // Si on veut utiliser le nom comme seed principale
+    // If we want to use the name as the primary seed
     if (useNameAsSeed) {
       if (deviceName) {
-        // Utiliser le nom d'appareil fourni en prop
+        // Use the device name provided as prop
         seed = deviceName;
       } else if (deviceId && !deviceName) {
-        // Pas de nom fourni, on essaie de récupérer le nom associé à cet ID
-        // Pour l'instant on utilise l'ID comme fallback
+        // No name provided, try to get the name associated with this ID
+        // For now, use the ID as fallback
         seed = deviceId;
       } else {
-        // Si aucun ID ni nom fourni et qu'on est sur l'appareil courant
+        // If no ID or name provided and we're on the current device
         seed = currentDeviceName;
       }
     } else {
-      // Mode legacy : utiliser seulement l'ID comme seed
+      // Legacy mode: use only the ID as seed
       seed = deviceId || currentDeviceName;
     }
     
-    // Générer l'avatar si on a une seed valide
+    // Generate avatar if we have a valid seed
     if (seed) {
       setAvatar(generateAvatar(seed, style));
     }
   }, [deviceId, deviceName, style, useNameAsSeed, currentDeviceName]);
   
   if (!avatar) {
-    // Afficher un placeholder pendant le chargement
+    // Display a placeholder during loading
     return (
       <div 
         className={`bg-muted rounded-full flex items-center justify-center ${className}`}
@@ -66,7 +66,7 @@ export const DeviceAvatar = ({
   return (
     <img
       src={avatar}
-      alt="Avatar de l'appareil"
+      alt="Device avatar"
       className={`rounded-full ${className}`}
       style={{ width: size, height: size }}
     />

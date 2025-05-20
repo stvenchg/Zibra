@@ -28,8 +28,8 @@ export const HomePage = () => {
       setDeviceName(tempName);
       addToast({
         type: 'success',
-        title: 'Nom modifié',
-        description: `Votre appareil s'affiche maintenant comme "${tempName}". Ce nom est sauvegardé pour vos prochaines connexions.`,
+        title: 'Name changed',
+        description: `Your device now displays as "${tempName}". This name is saved for your future connections.`,
         duration: 3000
       });
     }
@@ -42,7 +42,7 @@ export const HomePage = () => {
         <div className="md:col-span-3 space-y-6">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-xl">Votre appareil</CardTitle>
+              <CardTitle className="text-xl">Your device</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4">
@@ -57,7 +57,7 @@ export const HomePage = () => {
                       autoFocus
                       className="flex-1"
                     />
-                    <Button onClick={handleNameSave} size="sm">Enregistrer</Button>
+                    <Button onClick={handleNameSave} size="sm">Save</Button>
                   </div>
                 ) : (
                   <div className="flex items-center justify-between flex-1">
@@ -65,14 +65,14 @@ export const HomePage = () => {
                       <div className="font-semibold text-lg">{deviceName}</div>
                       <div className="text-xs text-muted-foreground">ID: {deviceId.substring(0, 8)}</div>
                     </div>
-                    <Button onClick={handleNameEdit} variant="outline" size="sm">Modifier</Button>
+                    <Button onClick={handleNameEdit} variant="outline" size="sm">Edit</Button>
                   </div>
                 )}
               </div>
               
               <div className="text-sm text-muted-foreground">
-                Partagez des fichiers avec d'autres appareils sur le même réseau.
-                Sélectionnez jusqu'à {AppConfig.fileTransfer.maxFilesPerTransfer} fichiers, puis choisissez un appareil destinataire.
+                Share files with other devices on the same network.
+                Select up to {AppConfig.fileTransfer.maxFilesPerTransfer} files, then choose a target device.
               </div>
             </CardContent>
           </Card>
@@ -85,8 +85,8 @@ export const HomePage = () => {
           
           <Tabs defaultValue="transfers" className="w-full">
             <TabsList className="grid grid-cols-2">
-              <TabsTrigger value="transfers">Transferts</TabsTrigger>
-              <TabsTrigger value="received">Fichiers reçus</TabsTrigger>
+              <TabsTrigger value="transfers">Transfers</TabsTrigger>
+              <TabsTrigger value="received">Received files</TabsTrigger>
             </TabsList>
             <TabsContent value="transfers" className="mt-4">
               <TransferList />

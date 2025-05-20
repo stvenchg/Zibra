@@ -2,8 +2,8 @@ import { uniqueNamesGenerator, adjectives, colors, animals, names } from 'unique
 import type { Config } from 'unique-names-generator';
 
 /**
- * Génère un nom d'appareil aléatoire au format "Adjectif Nom"
- * Exemples: "Jubilant Intuition", "Happy Cat", "Brave Tiger"
+ * Generates a random device name in the format "Adjective Name"
+ * Examples: "Jubilant Intuition", "Happy Cat", "Brave Tiger"
  */
 export const generateDeviceName = (): string => {
   const nameConfig: Config = {
@@ -17,8 +17,8 @@ export const generateDeviceName = (): string => {
 };
 
 /**
- * Génère un nom d'appareil aléatoire au format "Couleur Animal"
- * Exemples: "Red Panda", "Blue Dolphin", "Green Elephant"
+ * Generates a random device name in the format "Color Animal"
+ * Examples: "Red Panda", "Blue Dolphin", "Green Elephant"
  */
 export const generateColorfulDeviceName = (): string => {
   const nameConfig: Config = {
@@ -32,8 +32,8 @@ export const generateColorfulDeviceName = (): string => {
 };
 
 /**
- * Génère un nom d'appareil aléatoire au format "Nom Adjectif"
- * Exemples: "Alice Jubilant", "Bob Brave", "Charlie Happy"
+ * Generates a random device name in the format "Name Adjective"
+ * Examples: "Alice Jubilant", "Bob Brave", "Charlie Happy"
  */
 export const generatePersonalDeviceName = (): string => {
   const nameConfig: Config = {

@@ -14,7 +14,7 @@ export const TransferPage = () => {
   const targetDevice = availableDevices.find(device => device.id === deviceId);
   
   if (!deviceId) {
-    return <div className="container mx-auto px-4 py-8 text-center">Identifiant d'appareil non spécifié</div>;
+    return <div className="container mx-auto px-4 py-8 text-center">Device ID not specified</div>;
   }
   
   return (
@@ -29,8 +29,8 @@ export const TransferPage = () => {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-bold">
-          Transfert de fichiers 
-          {targetDevice ? ` vers ${targetDevice.name}` : ''}
+          File Transfer 
+          {targetDevice ? ` to ${targetDevice.name}` : ''}
         </h1>
       </div>
       

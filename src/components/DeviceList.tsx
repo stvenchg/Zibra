@@ -12,41 +12,41 @@ export const DeviceList = () => {
   const { addToast } = useToast();
   const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState<Record<string, number>>({});
-  // État pour suivre les appareils vers lesquels il y a des transferts actifs
+  // State to track devices with active transfers
   const [activeTransferDevices, setActiveTransferDevices] = useState<Record<string, boolean>>({});
-  // Pour stocker les timers de rafraîchissement
+  // To store refresh timers
   const transferTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
   
-  // Mettre à jour l'état des transferts actifs quand fileTransfers change
+  // Update active transfers state when fileTransfers changes
   useEffect(() => {
-    // Trouver les appareils avec des transferts actifs
+    // Find devices with active transfers
     const devicesWithActiveTransfers: Record<string, boolean> = {};
     
     fileTransfers.forEach(transfer => {
-      // Si le transfert est en cours et a un appareil cible
+      // If transfer is in progress and has a target device
       if (
         (transfer.status === 'transferring' || transfer.status === 'pending') && 
         transfer.targetDevice
       ) {
         devicesWithActiveTransfers[transfer.targetDevice] = true;
         
-        // Annuler tout timer existant pour cet appareil
+        // Cancel any existing timer for this device
         if (transferTimersRef.current[transfer.targetDevice]) {
           clearTimeout(transferTimersRef.current[transfer.targetDevice]);
           delete transferTimersRef.current[transfer.targetDevice];
         }
       }
       
-      // Si le transfert vient de se terminer, ajouter un délai avant de le retirer
+      // If the transfer has just completed, add a delay before removing it
       if (
         (transfer.status === 'completed' || transfer.status === 'failed' || transfer.status === 'canceled') &&
         transfer.targetDevice
       ) {
-        // Vérifier si ce dispositif était précédemment marqué comme actif
+        // Check if this device was previously marked as active
         const wasActive = activeTransferDevices[transfer.targetDevice];
         
         if (wasActive && !devicesWithActiveTransfers[transfer.targetDevice]) {
-          // Configurer un timer pour retirer l'appareil après un délai
+          // Set up a timer to remove the device after a delay
           if (!transferTimersRef.current[transfer.targetDevice]) {
             transferTimersRef.current[transfer.targetDevice] = setTimeout(() => {
               setActiveTransferDevices(prev => {
@@ -55,25 +55,25 @@ export const DeviceList = () => {
                 return updated;
               });
               delete transferTimersRef.current[transfer.targetDevice!];
-            }, 100); // Délai de 100ms pour laisser le temps à l'UI de se stabiliser
+            }, 100); // 100ms delay to allow UI to stabilize
           }
         }
       }
     });
     
-    // Mettre à jour l'état avec les appareils qui ont des transferts actifs
-    // mais préserver ceux qui ont des timers en cours
+    // Update state with devices that have active transfers
+    // but preserve those with timers in progress
     setActiveTransferDevices(prev => {
       const newState = { ...prev };
       
-      // Ajouter les nouveaux appareils avec transferts actifs
+      // Add new devices with active transfers
       Object.keys(devicesWithActiveTransfers).forEach(deviceId => {
         newState[deviceId] = true;
       });
       
-      // Conserver uniquement les appareils avec des transferts actifs ou des timers en cours
+      // Keep only devices with active transfers or timers in progress
       return Object.keys(newState).reduce((acc, deviceId) => {
-        // Si l'appareil a un transfert actif ou un timer en cours, le conserver
+        // If device has an active transfer or a timer in progress, keep it
         if (devicesWithActiveTransfers[deviceId] || transferTimersRef.current[deviceId]) {
           acc[deviceId] = true;
         }
@@ -82,21 +82,21 @@ export const DeviceList = () => {
     });
   }, [fileTransfers]);
 
-  // Nettoyer les timers lors du démontage du composant
+  // Clean up timers when component unmounts
   useEffect(() => {
     return () => {
       Object.values(transferTimersRef.current).forEach(timer => clearTimeout(timer));
     };
   }, []);
 
-  // Vérifier si un transfert est en cours vers un appareil spécifique
+  // Check if a transfer is in progress to a specific device
   const hasActiveTransferTo = useCallback((deviceId: string) => {
-    // Vérifier d'abord l'état local pour une réponse immédiate
+    // First check local state for an immediate response
     if (activeTransferDevices[deviceId]) {
       return true;
     }
     
-    // Vérifier ensuite les transferts eux-mêmes (approche plus lente mais complète)
+    // Then check the transfers themselves (slower but more thorough approach)
     return fileTransfers.some(
       transfer => 
         transfer.targetDevice === deviceId && 
@@ -107,23 +107,23 @@ export const DeviceList = () => {
   // Handle sending files to selected device
   const handleSendFiles = useCallback((e: React.MouseEvent, deviceId: string) => {
     e.preventDefault();
-    console.log('Envoi de fichiers vers l\'appareil:', deviceId);
+    console.log('Sending files to device:', deviceId);
     
     if (selectedFiles.length === 0) {
-      vibrateError(); // Vibration d'erreur si aucun fichier sélectionné
+      vibrateError(); // Error vibration if no files selected
       addToast({
         type: 'warning',
-        title: 'Aucun fichier sélectionné',
-        description: 'Veuillez sélectionner au moins un fichier à transférer.',
+        title: 'No files selected',
+        description: 'Please select at least one file to transfer.',
         duration: 5000
       });
       return;
     }
     
-    vibrateStrong(); // Vibration forte pour indiquer le début du transfert
+    vibrateStrong(); // Strong vibration to indicate transfer start
     setConnectingDeviceId(deviceId);
     
-    // Marquer immédiatement cet appareil comme ayant un transfert actif
+    // Immediately mark this device as having an active transfer
     setActiveTransferDevices(prev => ({
       ...prev,
       [deviceId]: true
@@ -138,26 +138,26 @@ export const DeviceList = () => {
     // Send files to the device
     try {      
       sendFiles(selectedFiles, deviceId);
-      console.log('Transfert de fichier initié');
+      console.log('File transfer initiated');
       
       // We'll let the timeout handle resetting the state
       // as the transfer progress will be tracked in TransferList
     } catch (error: unknown) {
-      console.error('Échec de l\'envoi des fichiers:', error);
+      console.error('Failed to send files:', error);
       setConnectingDeviceId(null);
       
-      // Supprimer l'état de transfert actif en cas d'erreur
+      // Remove active transfer state in case of error
       setActiveTransferDevices(prev => {
         const updated = { ...prev };
         delete updated[deviceId];
         return updated;
       });
       
-      vibrateError(); // Vibration d'erreur si échec du transfert
+      vibrateError(); // Error vibration if transfer fails
       addToast({
         type: 'error',
-        title: 'Échec de connexion',
-        description: 'Impossible d\'établir la connexion avec l\'appareil.',
+        title: 'Connection failed',
+        description: 'Unable to establish connection with the device.',
         duration: 5000
       });
     }
@@ -168,11 +168,11 @@ export const DeviceList = () => {
       setConnectingDeviceId(prev => {
         if (prev === deviceId) {
           if (!isConnectedTo(deviceId)) {
-            vibrateError(); // Vibration d'erreur si délai dépassé
+            vibrateError(); // Error vibration if timeout exceeded
             addToast({
               type: 'error',
-              title: 'Délai d\'attente dépassé',
-              description: 'La connexion a pris trop de temps. Veuillez réessayer.',
+              title: 'Connection timeout',
+              description: 'The connection took too long. Please try again.',
               duration: 5000
             });
           }
@@ -192,9 +192,9 @@ export const DeviceList = () => {
   
   // Get the text to display on the button
   const getButtonText = useCallback((deviceId: string) => {
-    // Si un transfert est actif vers cet appareil, afficher "Transfert..."
+    // If there's an active transfer to this device, show "Transferring..."
     if (hasActiveTransferTo(deviceId)) {
-      return 'Transfert...';
+      return 'Transferring...';
     }
     
     const status = getConnectionStatus(deviceId);
@@ -202,11 +202,11 @@ export const DeviceList = () => {
     
     switch (status) {
       case 'connected':
-        return 'Transférer';
+        return 'Transfer';
       case 'connecting':
-        return 'Connexion...';
+        return 'Connecting...';
       default:
-        return attempts > 0 ? 'Réessayer' : 'Transférer';
+        return attempts > 0 ? 'Retry' : 'Transfer';
     }
   }, [getConnectionStatus, connectionAttempts, hasActiveTransferTo]);
 
@@ -214,7 +214,7 @@ export const DeviceList = () => {
   const getButtonVariant = useCallback((deviceId: string) => {
     const status = getConnectionStatus(deviceId);
     
-    // Si un transfert est actif, utiliser une variante désactivée
+    // If there's an active transfer, use a disabled variant
     if (hasActiveTransferTo(deviceId)) {
       return 'outline';
     }
@@ -229,7 +229,7 @@ export const DeviceList = () => {
     }
   }, [getConnectionStatus, hasActiveTransferTo]);
   
-  // Vérifier si le bouton doit être désactivé
+  // Check if button should be disabled
   const isButtonDisabled = useCallback((deviceId: string) => {
     const isConnecting = connectingDeviceId === deviceId;
     const noFilesSelected = selectedFiles.length === 0;
@@ -242,7 +242,7 @@ export const DeviceList = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Appareils disponibles</CardTitle>
+          <CardTitle className="text-xl">Available devices</CardTitle>
         </CardHeader>
         <CardContent className="text-center py-8 space-y-4">
           <div className="flex justify-center">
@@ -251,9 +251,9 @@ export const DeviceList = () => {
               <Wifi className="h-10 w-10 text-muted-foreground" />
             </div>
           </div>
-          <p className="text-muted-foreground mt-4">Recherche en cours</p>
+          <p className="text-muted-foreground mt-4">Searching...</p>
           <p className="text-sm text-muted-foreground flex items-center gap-1 justify-center">
-            <span>Les appareils connectés au même réseau apparaîtront automatiquement ici.</span>
+            <span>Devices connected to the same network will appear automatically here.</span>
           </p>
         </CardContent>
       </Card>
@@ -263,9 +263,9 @@ export const DeviceList = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Appareils disponibles</CardTitle>
+        <CardTitle className="text-xl">Available devices</CardTitle>
         <CardDescription>
-          {availableDevices.length} appareil{availableDevices.length > 1 ? 's' : ''} sur votre réseau
+          {availableDevices.length} device{availableDevices.length > 1 ? 's' : ''} on your network
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -306,7 +306,7 @@ export const DeviceList = () => {
                     onClick={(e) => handleSendFiles(e, device.id)}
                     disabled={buttonDisabled}
                     className={`${isConnecting || isTransfering ? 'animate-pulse' : ''} min-w-[140px] transition-all duration-200`}
-                    title={selectedFiles.length === 0 ? "Sélectionnez un fichier" : isTransfering ? "Transfert en cours" : ""}
+                    title={selectedFiles.length === 0 ? "Select a file" : isTransfering ? "Transfer in progress" : ""}
                   >
                     {(isConnecting || isTransfering) && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
                     {buttonText}

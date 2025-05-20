@@ -11,7 +11,7 @@ export const ReceivedFiles = () => {
   const { incomingFiles, downloadFile } = useConnection();
   const [now, setNow] = useState<number>(Date.now());
   
-  // Mettre à jour le temps actuel toutes les secondes pour les estimations
+  // Update current time every second for estimates
   useEffect(() => {
     const interval = setInterval(() => {
       setNow(Date.now());
@@ -19,9 +19,9 @@ export const ReceivedFiles = () => {
     return () => clearInterval(interval);
   }, []);
   
-  // Fonction modifiée pour inclure une vibration lors du téléchargement
+  // Modified function to include vibration when downloading
   const handleDownload = (fileId: string) => {
-    vibrateMedium(); // Vibration lors du téléchargement
+    vibrateMedium(); // Vibration when downloading
     downloadFile(fileId);
   };
   
@@ -36,8 +36,8 @@ export const ReceivedFiles = () => {
     return (
       <Card>
         {/* <CardHeader>
-          <CardTitle className="text-xl">Fichiers reçus</CardTitle>
-          <CardDescription>Fichiers envoyés par d'autres appareils</CardDescription>
+          <CardTitle className="text-xl">Received Files</CardTitle>
+          <CardDescription>Files sent by other devices</CardDescription>
         </CardHeader> */}
         <CardContent className="text-center py-8 space-y-4">
           <div className="flex justify-center">
@@ -45,9 +45,9 @@ export const ReceivedFiles = () => {
               <Inbox className="h-10 w-10 text-muted-foreground/70" />
             </div>
           </div>
-          <p className="text-muted-foreground">Aucun fichier reçu</p>
+          <p className="text-muted-foreground">No files received</p>
           <p className="text-sm text-muted-foreground flex items-center gap-1 justify-center">
-            <span>Les fichiers que vous recevez apparaîtront ici pour téléchargement.</span>
+            <span>Files you receive will appear here for download.</span>
           </p>
         </CardContent>
       </Card>
@@ -55,31 +55,31 @@ export const ReceivedFiles = () => {
   }
   
   const formatSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} o`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
   
   const formatSizeProgress = (receivedSize: number, totalSize: number): string => {
     if (totalSize === 0) return formatSize(receivedSize);
     
     if (totalSize < 1024 * 1024) {
-      // Affichage en Ko
+      // Display in KB
       const receivedKo = (receivedSize / 1024).toFixed(1);
       const totalKo = (totalSize / 1024).toFixed(1);
-      return `${receivedKo} / ${totalKo} Ko`;
+      return `${receivedKo} / ${totalKo} KB`;
     } else {
-      // Affichage en Mo
+      // Display in MB
       const receivedMo = (receivedSize / (1024 * 1024)).toFixed(1);
       const totalMo = (totalSize / (1024 * 1024)).toFixed(1);
-      return `${receivedMo} / ${totalMo} Mo`;
+      return `${receivedMo} / ${totalMo} MB`;
     }
   };
   
   const formatTimeRemaining = (ms?: number): string => {
     if (!ms) return '...';
     
-    // Convertir les millisecondes en secondes
+    // Convert milliseconds to seconds
     const seconds = Math.floor(ms / 1000);
     
     if (seconds < 60) {
@@ -99,18 +99,18 @@ export const ReceivedFiles = () => {
     if (!bytesPerSecond) return '';
     
     if (bytesPerSecond < 1024) {
-      return `${bytesPerSecond.toFixed(0)} o/s`;
+      return `${bytesPerSecond.toFixed(0)} B/s`;
     } else if (bytesPerSecond < 1024 * 1024) {
-      return `${(bytesPerSecond / 1024).toFixed(1)} Ko/s`;
+      return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`;
     } else {
-      return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} Mo/s`;
+      return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`;
     }
   };
 
   // Format date - using current date as placeholder since we don't have a timestamp yet
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp);
-    return date.toLocaleString('fr-FR', { 
+    return date.toLocaleString('en-US', { 
       day: '2-digit', 
       month: '2-digit', 
       year: 'numeric',
@@ -122,9 +122,9 @@ export const ReceivedFiles = () => {
   return (
     <Card>
       {/* <CardHeader>
-        <CardTitle className="text-xl">Fichiers reçus</CardTitle>
+        <CardTitle className="text-xl">Received Files</CardTitle>
         <CardDescription>
-          {validFiles.length} fichier{validFiles.length > 1 ? 's' : ''} reçu{validFiles.length > 1 ? 's' : ''}
+          {validFiles.length} file{validFiles.length > 1 ? 's' : ''} received
         </CardDescription>
       </CardHeader> */}
       <CardContent>
@@ -142,8 +142,8 @@ export const ReceivedFiles = () => {
                       : formatSize(file.size || file.receivedSize)}
                   </div>
                   <div className="text-xs mt-1 flex flex-col gap-0.5">
-                    <div><span className="font-medium">De:</span> {file.from}</div>
-                    <div><span className="font-medium">Reçu le:</span> {formatDate(file.timestamp)}</div>
+                    <div><span className="font-medium">From:</span> {file.from}</div>
+                    <div><span className="font-medium">Received:</span> {formatDate(file.timestamp)}</div>
                   </div>
                 </div>
                 
@@ -152,11 +152,11 @@ export const ReceivedFiles = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleDownload(file.id)}
-                    aria-label={`Télécharger ${file.name}`}
+                    aria-label={`Download ${file.name}`}
                     className="gap-1"
                   >
                     <Download size={14} />
-                    Télécharger
+                    Download
                   </Button>
                 )}
               </div>
@@ -186,11 +186,11 @@ export const ReceivedFiles = () => {
               )}
               
               {file.status === 'failed' && (
-                <Badge variant="destructive">Échec</Badge>
+                <Badge variant="destructive">Failed</Badge>
               )}
 
               {file.status === 'canceled' && (
-                <Badge variant="canceled">Annulé par l'expéditeur</Badge>
+                <Badge variant="canceled">Canceled by sender</Badge>
               )}
             </li>
           ))}

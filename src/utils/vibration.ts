@@ -1,41 +1,41 @@
 import { enableMainThreadBlocking } from "ios-vibrator-pro-max";
 import "ios-vibrator-pro-max";
 
-// Activer le blocage du thread principal pour les vibrations longues
-// Désactivé par défaut pour éviter de bloquer l'interface
+// Enable main thread blocking for long vibrations
+// Disabled by default to avoid blocking the interface
 enableMainThreadBlocking(false);
 
 /**
- * Fonctions utilitaires pour les vibrations
- * Utilise uniquement des vibrations courtes et subtiles
+ * Utility functions for vibrations
+ * Uses only short and subtle vibrations
  */
 
-// Vibration légère pour les interactions de base
+// Light vibration for basic interactions
 export const vibrateLight = () => {
   navigator.vibrate(50);
 };
 
-// Vibration moyenne pour les actions standard
+// Medium vibration for standard actions
 export const vibrateMedium = () => {
   navigator.vibrate(100);
 };
 
-// Vibration plus forte pour les actions importantes
+// Stronger vibration for important actions
 export const vibrateStrong = () => {
   navigator.vibrate(200);
 };
 
-// Vibration de succès (pattern)
+// Success vibration (pattern)
 export const vibrateSuccess = () => {
   navigator.vibrate([50, 50, 100]);
 };
 
-// Vibration d'erreur (pattern)
+// Error vibration (pattern)
 export const vibrateError = () => {
   navigator.vibrate([100, 30, 100, 30, 100]);
 };
 
-// Vibration de notification (plus subtile)
+// Notification vibration (more subtle)
 export const vibrateNotification = () => {
   navigator.vibrate([30, 50, 30]);
 }; 

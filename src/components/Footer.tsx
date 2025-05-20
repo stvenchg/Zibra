@@ -11,9 +11,9 @@ export const Footer = () => {
           </div>
           
           <div className="flex items-center gap-1.5 text-sm">
-            <span className="text-muted-foreground">Fait avec</span>
+            <span className="text-muted-foreground">Made with</span>
             <Heart className="h-4 w-4 fill-red-500 text-red-500 animate-pulse" />
-            <span className="text-muted-foreground">par</span>
+            <span className="text-muted-foreground">by</span>
             <a 
               href="https://stevenching.fr" 
               target="_blank" 

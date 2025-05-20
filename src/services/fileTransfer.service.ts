@@ -9,50 +9,50 @@ export class FileTransferService {
   private recentlyCreatedFilesRef: Set<string> = new Set();
   private pendingChunkFileIdRef: string | null = null;
   private deviceName: string;
-  private peerService: any; // Service pour l'envoi des données via WebRTC
-  private activeTransfers: Set<string> = new Set(); // Pour suivre les transferts actifs qui peuvent être annulés
+  private peerService: any; // Service for sending data via WebRTC
+  private activeTransfers: Set<string> = new Set(); // To track active transfers that can be canceled
 
   constructor(deviceName: string, peerService: any) {
     this.deviceName = deviceName;
     this.peerService = peerService;
   }
 
-  // Mettre à jour le nom de l'appareil
+  // Update device name
   updateDeviceName(name: string) {
     this.deviceName = name;
   }
 
-  // Récupérer la liste des transferts en cours
+  // Get list of active transfers
   getFileTransfers(): FileTransfer[] {
     return this.fileTransfers;
   }
 
-  // Récupérer la liste des fichiers entrants
+  // Get list of incoming files
   getIncomingFiles(): IncomingFile[] {
     return this.incomingFiles;
   }
 
-  // Mettre à jour la liste des transferts
+  // Update list of transfers
   setFileTransfers(transfers: FileTransfer[]) {
     this.fileTransfers = transfers;
   }
 
-  // Mettre à jour la liste des fichiers entrants
+  // Update list of incoming files
   setIncomingFiles(files: IncomingFile[]) {
     this.incomingFiles = files;
   }
 
-  // Appliquer les chunks en attente pour un fichier
+  // Apply pending chunks for a file
   applyPendingChunks(fileId: string) {
-    // Créer une copie locale du tableau de chunks
+    // Create a local copy of the chunk array
     const pendingChunksForFile = this.pendingChunksRef[fileId];
     
-    // Nettoyage immédiat
+    // Immediate cleanup
     delete this.pendingChunksRef[fileId];
     
     if (!pendingChunksForFile || !Array.isArray(pendingChunksForFile) || pendingChunksForFile.length === 0) {
       console.log(`No pending chunks for file ${fileId} or invalid format`);
-      return; // Pas de chunks à appliquer ou format invalide
+      return; // No chunks to apply or invalid format
     }
     
     console.log(`Applying ${pendingChunksForFile.length} pending chunks for file ${fileId}`);
@@ -68,7 +68,7 @@ export class FileTransferService {
       let receivedSize = file.receivedSize;
       const newChunks = [...file.chunks];
       
-      // Ajouter tous les chunks en attente
+      // Add all pending chunks
       for (let i = 0; i < pendingChunksForFile.length; i++) {
         try {
           const chunk = pendingChunksForFile[i];
@@ -77,8 +77,8 @@ export class FileTransferService {
             receivedSize += chunk.byteLength;
           }
         } catch (err) {
-          console.error(`Erreur lors du traitement d'un chunk pour ${fileId}:`, err);
-          // Continuer avec les autres chunks
+          console.error(`Error processing a chunk for ${fileId}:`, err);
+          // Continue with other chunks
         }
       }
       
@@ -87,7 +87,7 @@ export class FileTransferService {
       
       console.log(`Progress after applying pending chunks for ${file.name}: ${progress}% (${receivedSize}/${knownFileSize} bytes)`);
       
-      // Mettre à jour le fichier avec tous les chunks en attente
+      // Update the file with all pending chunks
       const updatedFiles = [...this.incomingFiles];
       updatedFiles[fileIndex] = {
         ...file,
@@ -96,40 +96,35 @@ export class FileTransferService {
         progress
       };
       
-      // Mise à jour immédiate de l'état
+      // Immediate update of state
       this.incomingFiles = updatedFiles;
       
-      // Forcer une mise à jour des fichiers pour actualiser l'UI
+      // Force update of files to refresh UI
       setTimeout(() => this.setIncomingFiles([...this.incomingFiles]), 100);
     } catch (err) {
-      console.error(`Erreur lors de l'application des chunks pour ${fileId}:`, err);
+      console.error(`Error applying chunks for ${fileId}:`, err);
     }
   }
 
-  // Nettoyer les fichiers dupliqués
+  // Clean up duplicate files
   cleanupDuplicateFiles() {
-    // Regrouper les fichiers par ID
+    // Group files by ID
     const filesById = new Map();
     
-    // Analyser tous les fichiers
+    // Analyze all files
     for (const file of this.incomingFiles) {
-      // Si ce fichier existe déjà, fusionner les propriétés
+      // If this file already exists, merge properties
       if (filesById.has(file.id)) {
         const existingFile = filesById.get(file.id);
         
-        // Prendre les propriétés non vides du nouveau fichier
+        // Take non-null file size
         const mergedFile = {
           ...existingFile,
-          // Take the non-null file size
           size: file.size || existingFile.size,
-          // Take the known sender name if available
           from: file.from !== 'unknown' ? file.from : existingFile.from,
-          // Keep the existing chunks if there are more
           chunks: existingFile.chunks.length > file.chunks.length ? 
                  existingFile.chunks : file.chunks,
-          // Keep the largest received size
           receivedSize: Math.max(existingFile.receivedSize, file.receivedSize),
-          // Keep the completed status if one of them is completed
           status: existingFile.status === 'completed' || file.status === 'completed' ?
                  'completed' : existingFile.status
         };
@@ -144,7 +139,7 @@ export class FileTransferService {
     this.incomingFiles = Array.from(filesById.values());
   }
 
-  // Télécharger un fichier reçu
+  // Download a received file
   downloadFile(fileId: string): boolean {
     try {
       const file = this.incomingFiles.find(f => f.id === fileId);
@@ -153,11 +148,11 @@ export class FileTransferService {
         return false;
       }
       
-      // Vérifier si le fichier est complété
+      // Check if the file is completed
       if (file.status !== 'completed') {
         if (file.status === 'canceled') {
           console.error('Cannot download a canceled file');
-          alert('Ce fichier a été annulé par l\'expéditeur et ne peut pas être téléchargé.');
+          alert('This file was canceled by the sender and cannot be downloaded.');
         } else {
           console.warn('File is not complete yet');
         }
@@ -209,10 +204,10 @@ export class FileTransferService {
     }
   }
 
-  // Gérer les données entrantes reçues via WebRTC
+  // Handle incoming data received via WebRTC
   handleIncomingData(data: any) {
     try {
-      // Si data est une chaîne, c'est probablement un message de contrôle (JSON)
+      // If data is a string, it's probably a control message (JSON)
       if (typeof data === 'string') {
         const message = JSON.parse(data);
         console.log('Received message:', message.type);
@@ -244,7 +239,7 @@ export class FileTransferService {
             console.warn('Unknown message type:', message.type);
         }
       } else {
-        // Données binaires (chunk de fichier)
+        // Binary data (file chunk)
         this.handleBinaryData(data);
       }
     } catch (error) {
@@ -252,7 +247,7 @@ export class FileTransferService {
     }
   }
 
-  // Gérer les informations d'un nouveau fichier entrant
+  // Handle information of a new incoming file
   private handleFileInfo(message: any) {
     // Initialize a new incoming file
     const newFile: IncomingFile = {
@@ -264,7 +259,7 @@ export class FileTransferService {
       status: 'receiving',
       chunks: [],
       from: message.from || 'unknown',
-      timestamp: Date.now(), // Ajouter l'horodatage de réception
+      timestamp: Date.now(), // Add reception timestamp
     };
     console.log('New incoming file:', newFile.name, 'size:', newFile.size);
     
@@ -281,7 +276,7 @@ export class FileTransferService {
             chunks: f.chunks,
             receivedSize: f.receivedSize,
             progress: f.size ? Math.min(100, Math.floor((f.receivedSize / f.size) * 100)) : f.progress,
-            timestamp: f.timestamp || Date.now(), // Préserver l'horodatage existant ou en créer un nouveau
+            timestamp: f.timestamp || Date.now(), // Preserve existing timestamp or create a new one
           };
         }
         return f;
@@ -308,7 +303,7 @@ export class FileTransferService {
     }
   }
 
-  // Gérer les données binaires (chunks de fichier)
+  // Handle binary data (file chunks)
   private handleBinaryData(data: ArrayBuffer) {
     const currentPendingFileId = this.pendingChunkFileIdRef;
     
@@ -342,7 +337,7 @@ export class FileTransferService {
         status: 'receiving',
         chunks: [],
         from: 'unknown', // Will be updated when file-info arrives
-        timestamp: Date.now(), // Ajouter l'horodatage de réception
+        timestamp: Date.now(), // Add reception timestamp
       };
       
       // Add the chunk to the queue while the file is being created
@@ -378,7 +373,7 @@ export class FileTransferService {
       // The file exists, add the chunk directly
       console.log(`Adding chunk directly to file ${targetFile.name}`);
       
-      // Mesurer le temps et la vitesse de réception
+      // Measure reception time and speed
       const now = Date.now();
       const timeSinceStart = now - targetFile.timestamp;
       const chunkSize = data.byteLength;
@@ -386,16 +381,16 @@ export class FileTransferService {
       // Add this chunk to the file
       const newChunks = [...targetFile.chunks, data];
       const receivedSize = targetFile.receivedSize + chunkSize;
-      const knownFileSize = targetFile.size || receivedSize; // Si la taille n'est pas connue, utiliser la taille reçue comme approximation
+      const knownFileSize = targetFile.size || receivedSize; // If size is unknown, use received size as approximation
       const progress = Math.min(100, Math.floor((receivedSize / knownFileSize) * 100));
       
-      // Calculer la vitesse moyenne de réception (octets par seconde)
+      // Calculate reception speed (bytes per second)
       const speed = receivedSize / (timeSinceStart / 1000);
       
-      // Estimer le temps restant
+      // Estimate remaining time
       let estimatedTimeRemaining = 0;
       if (speed > 0 && knownFileSize > receivedSize) {
-        estimatedTimeRemaining = ((knownFileSize - receivedSize) / speed) * 1000; // en millisecondes
+        estimatedTimeRemaining = ((knownFileSize - receivedSize) / speed) * 1000; // in milliseconds
       }
       
       console.log(`Progress update for ${targetFile.name}: ${progress}% (${receivedSize}/${knownFileSize} bytes), speed: ${speed.toFixed(0)} bytes/s, ETA: ${estimatedTimeRemaining.toFixed(0)}ms`);
@@ -415,95 +410,95 @@ export class FileTransferService {
         return file;
       });
       
-      // Forcer une mise à jour de l'état toutes les 10 chunks ou pour les gros fichiers
+      // Force state update every 10 chunks or for large files
       if (newChunks.length % 10 === 0 || knownFileSize > 10 * 1024 * 1024) {
         this.setIncomingFiles([...this.incomingFiles]);
       }
     }
   }
 
-  // Gérer la complétion d'un fichier
+  // Handle file completion
   private handleFileComplete(fileId: string) {
-    // Transfert de fichier terminé, mettre à jour le statut
+    // File transfer complete, update status
     console.log('File transfer complete:', fileId);
     
-    // Traiter les chunks en attente d'abord
+    // Process pending chunks first
     try {
       const hasPendingChunks = this.pendingChunksRef[fileId] && 
               Array.isArray(this.pendingChunksRef[fileId]) && 
               this.pendingChunksRef[fileId].length > 0;
               
       if (hasPendingChunks) {
-        console.log(`Traitement de ${this.pendingChunksRef[fileId].length} chunks en attente avant de finaliser le fichier`);
+        console.log(`Processing ${this.pendingChunksRef[fileId].length} pending chunks before finalizing the file`);
         this.applyPendingChunks(fileId);
       } else {
-        console.log(`Pas de chunks en attente pour le fichier ${fileId}`);
-        // Nettoyage au cas où
+        console.log(`No pending chunks for file ${fileId}`);
+        // Clean up in case of error
         delete this.pendingChunksRef[fileId];
       }
     } catch (err) {
-      console.error(`Erreur lors du traitement des chunks en attente pour ${fileId}:`, err);
-      // Nettoyage en cas d'erreur
+      console.error(`Error processing pending chunks for ${fileId}:`, err);
+      // Clean up in case of error
       delete this.pendingChunksRef[fileId];
     }
     
-    this.pendingChunkFileIdRef = null; // Effacer la référence
-    this.recentlyCreatedFilesRef.delete(fileId); // Nettoyer des fichiers récemment créés
+    this.pendingChunkFileIdRef = null; // Clear reference
+    this.recentlyCreatedFilesRef.delete(fileId); // Clean up recently created files
     
-    // Trouver le fichier pour calculer le progrès final
+    // Find file to calculate final progress
     const fileIndex = this.incomingFiles.findIndex(f => f.id === fileId);
     if (fileIndex !== -1) {
       const file = this.incomingFiles[fileIndex];
-      console.log(`Finalisation du fichier ${file.name} avec taille ${file.receivedSize} octets`);
+      console.log(`Finalizing file ${file.name} with size ${file.receivedSize} bytes`);
       
-      // Vérifier si le fichier n'a pas été annulé avant de le marquer comme complété
+      // Check if the file hasn't been canceled before marking as completed
       if (file.status !== 'canceled') {
-        // Vibration de notification pour indiquer la réception complète
+        // Notification vibration to indicate complete reception
         vibrateNotification();
       
-        // Mettre à jour le statut du fichier à 100% et marquer comme complété
+        // Update file status to 100% and mark as completed
         this.incomingFiles = this.incomingFiles.map(file => {
           if (file.id === fileId && file.status !== 'canceled') {
             const updatedFile: IncomingFile = { 
               ...file, 
               status: 'completed' as 'completed',
-              progress: 100 // S'assurer que la progression est bien à 100%
+              progress: 100 // Ensure progress is really 100%
             };
-            console.log(`Fichier ${file.name} complet et prêt à être téléchargé`);
+            console.log(`File ${file.name} complete and ready to be downloaded`);
             return updatedFile;
           }
           return file;
         });
       } else {
-        console.log(`Le fichier ${file.name} a été annulé, il ne sera pas marqué comme complété`);
+        console.log(`File ${file.name} was canceled, it won't be marked as completed`);
       }
         
-      // Forcer une mise à jour de l'interface
+      // Force UI update
       setTimeout(() => {
         this.setIncomingFiles([...this.incomingFiles]);
-        // Vérifier et nettoyer les fichiers dupliqués
+        // Check and clean up duplicate files
         this.cleanupDuplicateFiles();
       }, 200);
     } else {
-      console.warn(`Fichier ${fileId} non trouvé lors de la finalisation`);
-      // Vérifier et nettoyer les fichiers dupliqués quand même
+      console.warn(`File ${fileId} not found during finalization`);
+      // Check and clean up duplicate files anyway
       setTimeout(() => this.cleanupDuplicateFiles(), 200);
     }
   }
 
-  // Gérer l'annulation d'un fichier par l'expéditeur
+  // Handle file cancellation by the sender
   private handleFileCanceled(fileId: string, fileName: string) {
-    console.log(`Réception de notification d'annulation pour ${fileId} (${fileName})`);
+    console.log(`Received notification of cancellation for ${fileId} (${fileName})`);
     
-    // Vibration pour notifier l'utilisateur
+    // Notification vibration for user
     vibrateError();
     
-    // Trouver le fichier en cours de réception
+    // Find the file being received
     const fileIndex = this.incomingFiles.findIndex(f => f.id === fileId);
     if (fileIndex !== -1) {
-      console.log(`Marquer le fichier ${fileName} comme annulé`);
+      console.log(`Marking file ${fileName} as canceled`);
       
-      // Mettre à jour le statut du fichier
+      // Update the file status
       this.incomingFiles = this.incomingFiles.map(file => {
         if (file.id === fileId) {
           return { 
@@ -514,24 +509,24 @@ export class FileTransferService {
         return file;
       });
       
-      // Nettoyer les ressources associées à ce fichier
+      // Clean up resources associated with this file
       delete this.pendingChunksRef[fileId];
       this.recentlyCreatedFilesRef.delete(fileId);
       if (this.pendingChunkFileIdRef === fileId) {
         this.pendingChunkFileIdRef = null;
       }
       
-      // Forcer une mise à jour de l'interface
+      // Force UI update
       setTimeout(() => {
         this.setIncomingFiles([...this.incomingFiles]);
       }, 200);
     }
   }
 
-  // Envoyer un fichier à un appareil
+  // Send a file to a device
   async sendFile(file: File, targetDeviceId: string) {
-    // Trouver le nom de l'appareil cible s'il est disponible
-    const targetDeviceName = this.peerService?.getDeviceName(targetDeviceId) || 'Appareil inconnu';
+    // Find target device name if available
+    const targetDeviceName = this.peerService?.getDeviceName(targetDeviceId) || 'Unknown device';
     
     const transferId = `${Date.now()}-${file.name}`;
     const timestamp = Date.now();

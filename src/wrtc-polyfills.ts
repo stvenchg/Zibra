@@ -1,15 +1,15 @@
 import { Buffer } from 'buffer';
 
-// Polyfills pour WebRTC et simple-peer
+// Polyfills for WebRTC and simple-peer
 if (typeof window !== 'undefined') {
-  // Définir globalThis comme global
+  // Define globalThis as global
   if (!window.hasOwnProperty('global')) {
     Object.defineProperty(window, 'global', {
       get: () => window
     });
   }
 
-  // Polyfills pour process.nextTick et process.env
+  // Polyfills for process.nextTick and process.env
   if (!window.hasOwnProperty('process')) {
     Object.defineProperty(window, 'process', {
       value: {
@@ -19,7 +19,7 @@ if (typeof window !== 'undefined') {
     });
   }
 
-  // Polyfill pour Buffer
+  // Polyfill for Buffer
   if (!window.hasOwnProperty('Buffer')) {
     Object.defineProperty(window, 'Buffer', {
       get: () => Buffer

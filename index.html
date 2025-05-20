@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/zibra-ico.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zibra - Partage de fichiers en réseau local</title>
+    <title>Zibra - Local Network File Transfer</title>
     <script>
-      // Initialisation du thème
+      // Theme initialization
       (function() {
         const storedTheme = localStorage.getItem('theme');
         const isDark = storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -15,16 +15,16 @@
           document.documentElement.classList.add('dark');
         } else {
           document.documentElement.classList.remove('dark');
-          // Forcer le retrait du thème sombre
+          // Force dark theme removal
           document.documentElement.className = document.documentElement.className.replace(/\bdark\b/g, '');
         }
         
-        // Afficher le thème actuel dans la console pour débogage
-        console.log('Thème actuel:', isDark ? 'sombre' : 'clair');
-        console.log('Classes HTML:', document.documentElement.className);
+        // Display current theme in console for debugging
+        console.log('Current theme:', isDark ? 'dark' : 'light');
+        console.log('HTML classes:', document.documentElement.className);
       })();
       
-      // Polyfills pour simple-peer - DOIVENT être définis avant tout autre script
+      // Polyfills for simple-peer - MUST be defined before any other script
       window.global = window;
       window.process = window.process || { env: {} };
       window.process.nextTick = function(fn) {

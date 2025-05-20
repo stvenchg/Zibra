@@ -8,17 +8,17 @@ import { vibrateLight } from '../utils/vibration';
 export const Header = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Détecter le mode sombre
+  // Detect dark mode
   useEffect(() => {
     const checkDarkMode = () => {
       const isDark = document.documentElement.classList.contains('dark');
       setIsDarkMode(isDark);
     };
 
-    // Vérifier au chargement
+    // Check on load
     checkDarkMode();
 
-    // Observer les changements de classe sur l'élément HTML
+    // Observe changes to the class attribute on the HTML element
     const observer = new MutationObserver(checkDarkMode);
     observer.observe(document.documentElement, { 
       attributes: true,
@@ -28,10 +28,10 @@ export const Header = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Fonction pour gérer le clic sur le bouton À propos
+  // Function to handle click on the About button
   const handleInfoClick = () => {
-    vibrateLight(); // Vibration légère
-    alert('Zibra - Application de partage de fichiers WebRTC\nDéveloppée avec React, TypeScript et TailwindCSS');
+    vibrateLight(); // Light vibration
+    alert('Zibra - WebRTC File Sharing Application\nDeveloped with React, TypeScript and TailwindCSS\n\nMade with ❤️ by Steven Ching');
   };
 
   return (
@@ -51,7 +51,7 @@ export const Header = () => {
           <Button
             variant="ghost"
             size="icon"
-            title="À propos"
+            title="About"
             onClick={handleInfoClick}
           >
             <Info size={18} />

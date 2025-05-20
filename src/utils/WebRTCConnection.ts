@@ -15,20 +15,20 @@ export class WebRTCConnection extends EventEmitter {
     super();
     this.isInitiator = initiator;
     
-    // Configuration améliorée avec plus de serveurs STUN/TURN publics fiables
+    // Enhanced configuration with more reliable public STUN/TURN servers
     const defaultConfig: RTCConfiguration = {
       iceServers: config.iceServers || [
-        // Serveurs STUN Google
+        // Google STUN servers
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
         { urls: 'stun:stun2.l.google.com:19302' },
         { urls: 'stun:stun3.l.google.com:19302' },
         { urls: 'stun:stun4.l.google.com:19302' },
         
-        // Serveurs STUN Twilio
+        // Twilio STUN servers
         { urls: 'stun:global.stun.twilio.com:3478' },
         
-        // Serveurs TURN publics (à remplacer idéalement par vos propres serveurs TURN)
+        // Public TURN servers (ideally replace with your own TURN servers)
         {
           urls: 'turn:numb.viagenie.ca',
           username: 'webrtc@live.com',
@@ -41,7 +41,7 @@ export class WebRTCConnection extends EventEmitter {
         }
       ],
       iceCandidatePoolSize: 10,
-      // Options supplémentaires pour améliorer la connectivité
+      // Additional options to improve connectivity
       iceTransportPolicy: 'all',
       bundlePolicy: 'max-bundle',
       rtcpMuxPolicy: 'require'
@@ -93,7 +93,7 @@ export class WebRTCConnection extends EventEmitter {
         this.connected = false;
         this.emit('close');
         
-        // Émettre une erreur spécifique en cas d'échec de la connexion ICE
+        // Emit a specific error when ICE connection fails
         if (this.connection.iceConnectionState === 'failed') {
           this.emit('error', new Error('ICE connection failed'));
         }
@@ -118,14 +118,14 @@ export class WebRTCConnection extends EventEmitter {
         this.connected = false;
         this.emit('close');
         
-        // Émettre une erreur spécifique en cas d'échec de connexion
+        // Emit a specific error when connection fails
         if (this.connection.connectionState === 'failed') {
           this.emit('error', new Error('Connection failed'));
         }
       }
     };
     
-    // Debug: surveiller les négociations nécessaires
+    // Debug: monitor needed negotiations
     this.connection.onnegotiationneeded = () => {
       console.log('Negotiation needed');
     };
@@ -135,9 +135,9 @@ export class WebRTCConnection extends EventEmitter {
     try {
       console.log('Creating data channel');
       this.dataChannel = this.connection.createDataChannel('fileTransfer', {
-        ordered: true, // Garantit que les paquets arrivent dans l'ordre
-        // Mode complètement fiable - aucune limite de retransmission
-        // Ne pas spécifier maxRetransmits ou maxPacketLifeTime pour une fiabilité maximale
+        ordered: true, // Ensures packets arrive in order
+        // Fully reliable mode - no retransmission limit
+        // Do not specify maxRetransmits or maxPacketLifeTime for maximum reliability
       });
       this.setupDataChannel(this.dataChannel);
     } catch (error) {
@@ -185,7 +185,7 @@ export class WebRTCConnection extends EventEmitter {
     try {
       console.log('Creating offer');
       const offer = await this.connection.createOffer({
-        // Options pour améliorer la compatibilité et la stabilité
+        // Options to improve compatibility and stability
         offerToReceiveAudio: false,
         offerToReceiveVideo: false,
         iceRestart: false
@@ -220,9 +220,9 @@ export class WebRTCConnection extends EventEmitter {
           await this.connection.addIceCandidate(new RTCIceCandidate(data));
           console.log('ICE candidate added');
         } catch (err) {
-          // Gérer les erreurs d'ajout de candidat ICE spécifiquement
+          // Handle ICE candidate addition errors specifically
           console.error('Error adding ICE candidate:', err);
-          // Ne pas propager l'erreur pour éviter d'interrompre la connexion pour un candidat rejeté
+          // Do not propagate error to avoid interrupting connection for a rejected candidate
         }
         return;
       }
@@ -232,8 +232,8 @@ export class WebRTCConnection extends EventEmitter {
         console.log(`Received ${data.type}`);
         
         try {
-          // Ajouter un délai avant de définir la description distante
-          // Cela peut aider avec certaines implémentations qui ont des problèmes de timing
+          // Add a delay before setting remote description
+          // This can help with some implementations that have timing issues
           await new Promise(resolve => setTimeout(resolve, 100));
           
           await this.connection.setRemoteDescription(new RTCSessionDescription(data));
@@ -257,17 +257,17 @@ export class WebRTCConnection extends EventEmitter {
                 await this.connection.addIceCandidate(new RTCIceCandidate(candidate));
               } catch (err) {
                 console.error('Error adding queued ICE candidate:', err);
-                // Continuer avec les autres candidats
+                // Continue with other candidates
               }
             }
             this.pendingCandidates = [];
             console.log('All queued ICE candidates processed');
           }
         } catch (err) {
-          // Vérifier s'il s'agit d'une erreur d'état
+          // Check if it's a state error
           if (String(err).includes('Called in wrong state') || 
               String(err).includes('InvalidStateError')) {
-            console.warn(`État incorrect pour la définition de la description distante: ${data.type}`, err);
+            console.warn(`Invalid state for setting remote description: ${data.type}`, err);
             this.emit('error', new Error(`Invalid state for ${data.type} processing`));
           } else {
             console.error(`Error setting remote description for ${data.type}:`, err);
@@ -289,23 +289,23 @@ export class WebRTCConnection extends EventEmitter {
     }
     
     try {
-      // Implémentation de protection contre les gros fichiers
+      // Implementation of protection against large files
       if (data instanceof ArrayBuffer && data.byteLength > 256 * 1024) {
-        console.warn(`Envoi d'un gros chunk (${data.byteLength} octets), vigilance conseillée`);
+        console.warn(`Sending a large chunk (${data.byteLength} bytes), caution advised`);
       }
       
-      // Limiter la vitesse d'envoi pour les gros chunks
+      // Limit sending speed for large chunks
       this.dataChannel.send(data);
       return true;
     } catch (error) {
       console.error('Error sending data:', error);
       
-      // Si c'est une erreur de canal fermé, essayer de gérer proprement
+      // If it's a closed channel error, try to handle gracefully
       if (String(error).includes('closed') || 
           (this.dataChannel && this.dataChannel.readyState !== 'open')) {
         this.emit('error', new Error('DataChannel closed unexpectedly'));
         
-        // Marquer la connexion comme fermée pour forcer une reconnexion
+        // Mark connection as closed to force a reconnection
         this.connected = false;
         setTimeout(() => this.emit('close'), 0);
       } else {

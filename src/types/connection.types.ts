@@ -15,10 +15,10 @@ export interface FileTransfer {
   progress: number;
   status: 'pending' | 'transferring' | 'completed' | 'failed' | 'canceled';
   targetDevice?: string; // ID of the device receiving the file
-  targetDeviceName?: string; // Nom de l'appareil destinataire
-  timestamp: number; // Horodatage de début du transfert
-  estimatedTimeRemaining?: number; // Temps restant estimé en millisecondes
-  speed?: number; // Vitesse de transfert en octets par seconde
+  targetDeviceName?: string; // Name of the destination device
+  timestamp: number; // Start timestamp of the transfer
+  estimatedTimeRemaining?: number; // Estimated time remaining in milliseconds
+  speed?: number; // Transfer speed in bytes per second
 }
 
 export interface IncomingFile {
@@ -30,9 +30,9 @@ export interface IncomingFile {
   status: 'receiving' | 'completed' | 'failed' | 'canceled';
   chunks: ArrayBuffer[];
   from: string;
-  timestamp: number; // Horodatage de début de réception
-  estimatedTimeRemaining?: number; // Temps restant estimé en millisecondes
-  speed?: number; // Vitesse de réception en octets par seconde
+  timestamp: number; // Start timestamp of reception
+  estimatedTimeRemaining?: number; // Estimated time remaining in milliseconds
+  speed?: number; // Reception speed in bytes per second
 }
 
 export interface SelectedFile {

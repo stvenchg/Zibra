@@ -1,23 +1,23 @@
-// Définir process.nextTick directement au niveau global
+// Define process.nextTick directly at the global level
 window.process = window.process || {};
 window.process.nextTick = function(fn: Function, ...args: any[]) {
   setTimeout(() => fn(...args), 0);
 };
 
-// Forcer la vérification du thème au démarrage
+// Force theme check at startup
 (function() {
   const isDark = document.documentElement.classList.contains('dark');
-  console.log('main.tsx - Démarrage avec thème:', isDark ? 'sombre' : 'clair');
+  console.log('main.tsx - Starting with theme:', isDark ? 'dark' : 'light');
   
-  // Force la suppression du thème sombre si on est en mode clair
+  // Force dark theme removal if we're in light mode
   if (!isDark) {
     document.documentElement.classList.remove('dark');
   }
 })();
 
-// Polyfills - DOIVENT être importés avant tout autre code
+// Polyfills - MUST be imported before any other code
 import 'buffer';
-import './wrtc-polyfills'; // Nouveaux polyfills spécifiques à WebRTC
+import './wrtc-polyfills'; // New WebRTC-specific polyfills
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';

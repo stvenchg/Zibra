@@ -12,7 +12,7 @@ export const TransferList = () => {
   const { fileTransfers, cancelFileTransfer } = useConnection();
   const [now, setNow] = useState<number>(Date.now());
   
-  // Mettre à jour le temps actuel toutes les secondes pour les estimations
+  // Update current time every second for estimates
   useEffect(() => {
     const interval = setInterval(() => {
       setNow(Date.now());
@@ -24,8 +24,8 @@ export const TransferList = () => {
     return (
       <Card>
         {/* <CardHeader>
-          <CardTitle className="text-xl">Transferts</CardTitle>
-          <CardDescription>Historique des fichiers envoyés</CardDescription>
+          <CardTitle className="text-xl">Transfers</CardTitle>
+          <CardDescription>History of sent files</CardDescription>
         </CardHeader> */}
         <CardContent className="text-center py-8 space-y-4">
           <div className="flex justify-center">
@@ -33,9 +33,9 @@ export const TransferList = () => {
               <ArrowUpDown className="h-10 w-10 text-muted-foreground/70" />
             </div>
           </div>
-          <p className="text-muted-foreground">Aucun transfert</p>
+          <p className="text-muted-foreground">No transfers</p>
           <p className="text-sm text-muted-foreground flex items-center gap-1 justify-center">
-            <span>Les fichiers que vous envoyez apparaîtront ici avec leur état.</span>
+            <span>Files you send will appear here with their status.</span>
           </p>
         </CardContent>
       </Card>
@@ -43,14 +43,14 @@ export const TransferList = () => {
   }
   
   const formatSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} o`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp);
-    return date.toLocaleString('fr-FR', { 
+    return date.toLocaleString('en-US', { 
       day: '2-digit', 
       month: '2-digit',
       hour: '2-digit', 
@@ -61,7 +61,7 @@ export const TransferList = () => {
   const formatTimeRemaining = (ms?: number): string => {
     if (!ms) return '...';
     
-    // Convertir les millisecondes en secondes
+    // Convert milliseconds to seconds
     const seconds = Math.floor(ms / 1000);
     
     if (seconds < 60) {
@@ -81,11 +81,11 @@ export const TransferList = () => {
     if (!bytesPerSecond) return '';
     
     if (bytesPerSecond < 1024) {
-      return `${bytesPerSecond.toFixed(0)} o/s`;
+      return `${bytesPerSecond.toFixed(0)} B/s`;
     } else if (bytesPerSecond < 1024 * 1024) {
-      return `${(bytesPerSecond / 1024).toFixed(1)} Ko/s`;
+      return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`;
     } else {
-      return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} Mo/s`;
+      return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`;
     }
   };
 
@@ -97,15 +97,15 @@ export const TransferList = () => {
   const getStatusBadge = (status: string) => {
     switch(status) {
       case 'completed':
-        return <Badge variant="default">Terminé</Badge>;
+        return <Badge variant="default">Completed</Badge>;
       case 'failed':
-        return <Badge variant="destructive">Échec</Badge>;
+        return <Badge variant="destructive">Failed</Badge>;
       case 'pending':
-        return <Badge variant="secondary">En attente</Badge>;
+        return <Badge variant="secondary">Pending</Badge>;
       case 'canceled':
-        return <Badge variant="canceled">Annulé</Badge>;
+        return <Badge variant="canceled">Canceled</Badge>;
       default:
-        return <Badge variant="outline">Envoi</Badge>;
+        return <Badge variant="outline">Sending</Badge>;
     }
   };
   
@@ -116,9 +116,9 @@ export const TransferList = () => {
   return (
     <Card>
       {/* <CardHeader>
-        <CardTitle className="text-xl">Transferts</CardTitle>
+        <CardTitle className="text-xl">Transfers</CardTitle>
         <CardDescription>
-          {fileTransfers.length} fichier{fileTransfers.length > 1 ? 's' : ''} dans l'historique
+          {fileTransfers.length} file{fileTransfers.length > 1 ? 's' : ''} in history
         </CardDescription>
       </CardHeader> */}
       <CardContent>
@@ -130,8 +130,8 @@ export const TransferList = () => {
                   <div className="font-medium">{transfer.fileName}</div>
                   <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
                     <div>{formatSize(transfer.fileSize)}</div>
-                    <div className="text-xs">À: {transfer.targetDeviceName || 'Appareil inconnu'}</div>
-                    <div className="text-xs">Le: {formatDate(transfer.timestamp)}</div>
+                    <div className="text-xs">To: {transfer.targetDeviceName || 'Unknown device'}</div>
+                    <div className="text-xs">Date: {formatDate(transfer.timestamp)}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -141,9 +141,9 @@ export const TransferList = () => {
                       size="sm"
                       className="hover:bg-red-50 transition-colors flex items-center gap-1.5"
                       onClick={() => handleCancelTransfer(transfer.id)}
-                      title="Annuler le transfert"
+                      title="Cancel transfer"
                     >
-                      <span className="text-xs">Annuler</span>
+                      <span className="text-xs">Cancel</span>
                     </Button>
                   )}
                   {getStatusBadge(transfer.status)}
@@ -169,11 +169,11 @@ export const TransferList = () => {
                     </div>
                     <div>
                       {transfer.status === 'completed' 
-                        ? 'Terminé' 
+                        ? 'Completed' 
                         : transfer.status === 'failed'
-                          ? 'Échec'
+                          ? 'Failed'
                           : transfer.status === 'canceled'
-                            ? 'Annulé'
+                            ? 'Canceled'
                             : `${transfer.progress}%`}
                     </div>
                   </div>

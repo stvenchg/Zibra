@@ -1,7 +1,7 @@
-// Importer le Buffer au lieu d'utiliser require
+// Import Buffer instead of using require
 import { Buffer } from 'buffer';
 
-// Polyfill pour l'environnement Node.js dans le navigateur
+// Polyfill for Node.js environment in the browser
 if (typeof window !== 'undefined') {
   // Global
   (window as any).global = window;

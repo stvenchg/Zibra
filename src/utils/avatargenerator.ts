@@ -4,13 +4,13 @@ import { avataaars, bottts, lorelei, miniavs, personas, glass } from '@dicebear/
 export type AvatarStyle = 'avataaars' | 'bottts' | 'lorelei' | 'miniavs' | 'personas' | 'glass';
 
 /**
- * Génère un avatar aléatoire basé sur un identifiant et un style
- * @param seed - Identifiant utilisé pour générer un avatar déterministe (ex: ID d'appareil)
- * @param style - Style d'avatar à utiliser
- * @returns URL de données de l'avatar SVG
+ * Generates a random avatar based on an identifier and style
+ * @param seed - Identifier used to generate a deterministic avatar (e.g., device ID)
+ * @param style - Avatar style to use
+ * @returns Data URL of the SVG avatar
  */
 export const generateAvatar = (seed: string, style: AvatarStyle = 'personas'): string => {
-  // S'assurer qu'on a toujours une seed valide
+  // Ensure we always have a valid seed
   const validSeed = seed?.trim() ? seed : 'default-' + Math.random().toString(36).substring(2, 7);
   
   let avatar;
@@ -41,12 +41,12 @@ export const generateAvatar = (seed: string, style: AvatarStyle = 'personas'): s
 };
 
 /**
- * Génère un avatar aléatoire basé sur un style spécifié
- * @param style - Style d'avatar à utiliser
- * @returns URL de données de l'avatar SVG
+ * Generates a random avatar based on a specified style
+ * @param style - Avatar style to use
+ * @returns Data URL of the SVG avatar
  */
 export const generateRandomAvatar = (style: AvatarStyle = 'personas'): string => {
-  // Créer un seed aléatoire
+  // Create a random seed
   const randomSeed = Math.random().toString(36).substring(2, 15);
   return generateAvatar(randomSeed, style);
 }; 

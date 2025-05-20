@@ -35,8 +35,8 @@ export const FileSelection = () => {
         vibrateError();
         addToast({
           type: 'warning',
-          title: 'Nombre maximum de fichiers atteint',
-          description: `Vous pouvez sélectionner jusqu'à ${AppConfig.fileTransfer.maxFilesPerTransfer} fichiers à la fois.`,
+          title: 'Maximum number of files reached',
+          description: `You can select up to ${AppConfig.fileTransfer.maxFilesPerTransfer} files at once.`,
           duration: 5000
         });
         return;
@@ -60,8 +60,8 @@ export const FileSelection = () => {
         vibrateError();
         addToast({
           type: 'error',
-          title: 'Fichiers trop volumineux',
-          description: `${oversizedCount} fichier(s) dépassent la taille maximale de ${(AppConfig.fileTransfer.maxFileSize / (1024 * 1024)).toFixed(0)} Mo.`,
+          title: 'Files too large',
+          description: `${oversizedCount} file(s) exceed the maximum size of ${(AppConfig.fileTransfer.maxFileSize / (1024 * 1024)).toFixed(0)} MB.`,
           duration: 5000
         });
       }
@@ -81,8 +81,8 @@ export const FileSelection = () => {
         vibrateError();
         addToast({
           type: 'warning',
-          title: 'Nombre maximum de fichiers atteint',
-          description: `Vous pouvez sélectionner jusqu'à ${AppConfig.fileTransfer.maxFilesPerTransfer} fichiers à la fois.`,
+          title: 'Maximum number of files reached',
+          description: `You can select up to ${AppConfig.fileTransfer.maxFilesPerTransfer} files at once.`,
           duration: 5000
         });
         return;
@@ -106,8 +106,8 @@ export const FileSelection = () => {
         vibrateError();
         addToast({
           type: 'error',
-          title: 'Fichiers trop volumineux',
-          description: `${oversizedCount} fichier(s) dépassent la taille maximale de ${(AppConfig.fileTransfer.maxFileSize / (1024 * 1024)).toFixed(0)} Mo.`,
+          title: 'Files too large',
+          description: `${oversizedCount} file(s) exceed the maximum size of ${(AppConfig.fileTransfer.maxFileSize / (1024 * 1024)).toFixed(0)} MB.`,
           duration: 5000
         });
       }
@@ -122,9 +122,9 @@ export const FileSelection = () => {
   }, [addSelectedFile, selectedFiles.length, addToast]);
   
   const formatSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} o`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
   
   const handleRemoveFile = (fileId: string) => {
@@ -140,7 +140,7 @@ export const FileSelection = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Sélection de fichiers</CardTitle>
+        <CardTitle className="text-xl">File Selection</CardTitle>
       </CardHeader>
       
       <CardContent className="space-y-4">
@@ -164,7 +164,7 @@ export const FileSelection = () => {
                     size="icon"
                     className="h-8 w-8 rounded-full transition-colors"
                     onClick={() => handleRemoveFile(file.id)}
-                    aria-label={`Supprimer ${file.name}`}
+                    aria-label={`Remove ${file.name}`}
                   >
                     <X size={16} />
                   </Button>
@@ -176,11 +176,11 @@ export const FileSelection = () => {
               <div>
                 {selectedFiles.length >= AppConfig.fileTransfer.maxFilesPerTransfer ? (
                   <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">
-                    Maximum atteint ({AppConfig.fileTransfer.maxFilesPerTransfer})
+                    Maximum reached ({AppConfig.fileTransfer.maxFilesPerTransfer})
                   </Badge>
                 ) : (
                   <Badge variant="outline">
-                    {selectedFiles.length} / {AppConfig.fileTransfer.maxFilesPerTransfer} fichiers
+                    {selectedFiles.length} / {AppConfig.fileTransfer.maxFilesPerTransfer} files
                   </Badge>
                 )}
               </div>
@@ -191,7 +191,7 @@ export const FileSelection = () => {
                 size="sm"
                 className="!hover:bg-red-200 transition-colors"
               >
-                Tout retirer
+                Remove all
               </Button>
             </div>
             
@@ -206,15 +206,15 @@ export const FileSelection = () => {
               >
                 <div className="flex flex-col items-center gap-2">
                   <Upload className="h-10 w-10 text-muted-foreground/70" />
-                  <p className="text-sm text-muted-foreground">Glissez d'autres fichiers ici</p>
-                  <p className="text-xs text-muted-foreground">ou</p>
+                  <p className="text-sm text-muted-foreground">Drag more files here</p>
+                  <p className="text-xs text-muted-foreground">or</p>
                   <Button
                     variant="outline"
                     size="sm"
                     className="relative"
                     onClick={() => document.getElementById('add-more-files')?.click()}
                   >
-                    Parcourir
+                    Browse
                     <input 
                       id="add-more-files"
                       type="file" 
@@ -240,14 +240,14 @@ export const FileSelection = () => {
               <div className="p-4 rounded-full bg-muted/50">
                 <Upload className="h-10 w-10 text-muted-foreground/70" />
               </div>
-              <p className="text-muted-foreground">Glissez et déposez vos fichiers ici</p>
-              <p className="text-xs text-muted-foreground">ou</p>
+              <p className="text-muted-foreground">Drag and drop your files here</p>
+              <p className="text-xs text-muted-foreground">or</p>
               <Button
                 variant="outline"
                 className="relative"
                 onClick={() => document.getElementById('file-upload')?.click()}
               >
-                Sélectionner des fichiers
+                Select files
                 <input 
                   id="file-upload"
                   type="file" 
@@ -258,7 +258,7 @@ export const FileSelection = () => {
               </Button>
               <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
                 <AlertCircle size={14} />
-                <span>Taille max. {(AppConfig.fileTransfer.maxFileSize / (1024 * 1024 * 1024)).toFixed(1)} Go par fichier</span>
+                <span>Max size {(AppConfig.fileTransfer.maxFileSize / (1024 * 1024 * 1024)).toFixed(1)} GB per file</span>
               </div>
             </div>
           </div>
