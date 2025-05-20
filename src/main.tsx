@@ -7,7 +7,7 @@ window.process.nextTick = function(fn: Function, ...args: any[]) {
 // Force theme check at startup
 (function() {
   const isDark = document.documentElement.classList.contains('dark');
-  console.log('main.tsx - Starting with theme:', isDark ? 'dark' : 'light');
+  console.log('main.tsx - Starting with theme: ', isDark ? 'dark' : 'light');
   
   // Force dark theme removal if we're in light mode
   if (!isDark) {
