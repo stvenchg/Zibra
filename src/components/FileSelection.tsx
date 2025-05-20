@@ -258,7 +258,7 @@ export const FileSelection = () => {
               </Button>
               <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
                 <AlertCircle size={14} />
-                <span>Taille max. {(AppConfig.fileTransfer.maxFileSize / (1024 * 1024)).toFixed(0)} Mo par fichier</span>
+                <span>Taille max. {(AppConfig.fileTransfer.maxFileSize / (1024 * 1024 * 1024)).toFixed(1)} Go par fichier</span>
               </div>
             </div>
           </div>

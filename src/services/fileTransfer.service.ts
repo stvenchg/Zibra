@@ -10,6 +10,7 @@ export class FileTransferService {
   private pendingChunkFileIdRef: string | null = null;
   private deviceName: string;
   private peerService: any; // Service pour l'envoi des données via WebRTC
+  private activeTransfers: Set<string> = new Set(); // Pour suivre les transferts actifs qui peuvent être annulés
 
   constructor(deviceName: string, peerService: any) {
     this.deviceName = deviceName;
@@ -152,8 +153,14 @@ export class FileTransferService {
         return false;
       }
       
+      // Vérifier si le fichier est complété
       if (file.status !== 'completed') {
-        console.warn('File is not complete yet');
+        if (file.status === 'canceled') {
+          console.error('Cannot download a canceled file');
+          alert('Ce fichier a été annulé par l\'expéditeur et ne peut pas être téléchargé.');
+        } else {
+          console.warn('File is not complete yet');
+        }
         return false;
       }
       
@@ -228,6 +235,11 @@ export class FileTransferService {
             break;
           }
           
+          case 'file-canceled': {
+            this.handleFileCanceled(message.id, message.name);
+            break;
+          }
+          
           default:
             console.warn('Unknown message type:', message.type);
         }
@@ -251,7 +263,8 @@ export class FileTransferService {
       progress: 0,
       status: 'receiving',
       chunks: [],
-      from: message.from || 'unknown'
+      from: message.from || 'unknown',
+      timestamp: Date.now(), // Ajouter l'horodatage de réception
     };
     console.log('New incoming file:', newFile.name, 'size:', newFile.size);
     
@@ -267,7 +280,8 @@ export class FileTransferService {
             ...newFile, 
             chunks: f.chunks,
             receivedSize: f.receivedSize,
-            progress: f.size ? Math.min(100, Math.floor((f.receivedSize / f.size) * 100)) : f.progress
+            progress: f.size ? Math.min(100, Math.floor((f.receivedSize / f.size) * 100)) : f.progress,
+            timestamp: f.timestamp || Date.now(), // Préserver l'horodatage existant ou en créer un nouveau
           };
         }
         return f;
@@ -327,7 +341,8 @@ export class FileTransferService {
         progress: 0,
         status: 'receiving',
         chunks: [],
-        from: 'unknown' // Will be updated when file-info arrives
+        from: 'unknown', // Will be updated when file-info arrives
+        timestamp: Date.now(), // Ajouter l'horodatage de réception
       };
       
       // Add the chunk to the queue while the file is being created
@@ -363,22 +378,38 @@ export class FileTransferService {
       // The file exists, add the chunk directly
       console.log(`Adding chunk directly to file ${targetFile.name}`);
       
+      // Mesurer le temps et la vitesse de réception
+      const now = Date.now();
+      const timeSinceStart = now - targetFile.timestamp;
+      const chunkSize = data.byteLength;
+      
       // Add this chunk to the file
       const newChunks = [...targetFile.chunks, data];
-      const receivedSize = targetFile.receivedSize + data.byteLength;
+      const receivedSize = targetFile.receivedSize + chunkSize;
       const knownFileSize = targetFile.size || receivedSize; // Si la taille n'est pas connue, utiliser la taille reçue comme approximation
       const progress = Math.min(100, Math.floor((receivedSize / knownFileSize) * 100));
       
-      console.log(`Progress update for ${targetFile.name}: ${progress}% (${receivedSize}/${knownFileSize} bytes)`);
+      // Calculer la vitesse moyenne de réception (octets par seconde)
+      const speed = receivedSize / (timeSinceStart / 1000);
       
-      // Update the file state
+      // Estimer le temps restant
+      let estimatedTimeRemaining = 0;
+      if (speed > 0 && knownFileSize > receivedSize) {
+        estimatedTimeRemaining = ((knownFileSize - receivedSize) / speed) * 1000; // en millisecondes
+      }
+      
+      console.log(`Progress update for ${targetFile.name}: ${progress}% (${receivedSize}/${knownFileSize} bytes), speed: ${speed.toFixed(0)} bytes/s, ETA: ${estimatedTimeRemaining.toFixed(0)}ms`);
+      
+      // Update the file state with all metrics
       this.incomingFiles = this.incomingFiles.map(file => {
         if (file.id === currentPendingFileId) {
           return {
             ...file,
             chunks: newChunks,
             receivedSize,
-            progress
+            progress,
+            speed,
+            estimatedTimeRemaining
           };
         }
         return file;
@@ -424,23 +455,28 @@ export class FileTransferService {
     if (fileIndex !== -1) {
       const file = this.incomingFiles[fileIndex];
       console.log(`Finalisation du fichier ${file.name} avec taille ${file.receivedSize} octets`);
-    
-      // Vibration de notification pour indiquer la réception complète
-      vibrateNotification();
       
-      // Mettre à jour le statut du fichier à 100% et marquer comme complété
-      this.incomingFiles = this.incomingFiles.map(file => {
-        if (file.id === fileId) {
-          const updatedFile: IncomingFile = { 
-            ...file, 
-            status: 'completed' as 'completed',
-            progress: 100 // S'assurer que la progression est bien à 100%
-          };
-          console.log(`Fichier ${file.name} complet et prêt à être téléchargé`);
-          return updatedFile;
-        }
-        return file;
-      });
+      // Vérifier si le fichier n'a pas été annulé avant de le marquer comme complété
+      if (file.status !== 'canceled') {
+        // Vibration de notification pour indiquer la réception complète
+        vibrateNotification();
+      
+        // Mettre à jour le statut du fichier à 100% et marquer comme complété
+        this.incomingFiles = this.incomingFiles.map(file => {
+          if (file.id === fileId && file.status !== 'canceled') {
+            const updatedFile: IncomingFile = { 
+              ...file, 
+              status: 'completed' as 'completed',
+              progress: 100 // S'assurer que la progression est bien à 100%
+            };
+            console.log(`Fichier ${file.name} complet et prêt à être téléchargé`);
+            return updatedFile;
+          }
+          return file;
+        });
+      } else {
+        console.log(`Le fichier ${file.name} a été annulé, il ne sera pas marqué comme complété`);
+      }
         
       // Forcer une mise à jour de l'interface
       setTimeout(() => {
@@ -455,18 +491,71 @@ export class FileTransferService {
     }
   }
 
+  // Gérer l'annulation d'un fichier par l'expéditeur
+  private handleFileCanceled(fileId: string, fileName: string) {
+    console.log(`Réception de notification d'annulation pour ${fileId} (${fileName})`);
+    
+    // Vibration pour notifier l'utilisateur
+    vibrateError();
+    
+    // Trouver le fichier en cours de réception
+    const fileIndex = this.incomingFiles.findIndex(f => f.id === fileId);
+    if (fileIndex !== -1) {
+      console.log(`Marquer le fichier ${fileName} comme annulé`);
+      
+      // Mettre à jour le statut du fichier
+      this.incomingFiles = this.incomingFiles.map(file => {
+        if (file.id === fileId) {
+          return { 
+            ...file, 
+            status: 'canceled' as 'canceled',
+          };
+        }
+        return file;
+      });
+      
+      // Nettoyer les ressources associées à ce fichier
+      delete this.pendingChunksRef[fileId];
+      this.recentlyCreatedFilesRef.delete(fileId);
+      if (this.pendingChunkFileIdRef === fileId) {
+        this.pendingChunkFileIdRef = null;
+      }
+      
+      // Forcer une mise à jour de l'interface
+      setTimeout(() => {
+        this.setIncomingFiles([...this.incomingFiles]);
+      }, 200);
+    }
+  }
+
   // Envoyer un fichier à un appareil
   async sendFile(file: File, targetDeviceId: string) {
+    // Trouver le nom de l'appareil cible s'il est disponible
+    const targetDeviceName = this.peerService?.getDeviceName(targetDeviceId) || 'Appareil inconnu';
+    
     const transferId = `${Date.now()}-${file.name}`;
+    const timestamp = Date.now();
+    
     const newTransfer: FileTransfer = {
       id: transferId,
       fileName: file.name,
       fileSize: file.size,
       progress: 0,
       status: 'pending',
+      targetDevice: targetDeviceId,
+      targetDeviceName: targetDeviceName,
+      timestamp: timestamp,
     };
 
     this.fileTransfers = [...this.fileTransfers, newTransfer];
+    // Ajouter à la liste des transferts actifs
+    this.activeTransfers.add(transferId);
+
+    // Variables pour le calcul de la vitesse et du temps restant
+    let startTime = Date.now();
+    let lastUpdate = startTime;
+    let bytesTransferredSinceLastUpdate = 0;
+    let currentSpeed = 0;
 
     // Informer l'autre appareil du fichier à venir
     const fileInfo = {
@@ -489,16 +578,55 @@ export class FileTransferService {
       const reader = new FileReader();
       let offset = 0;
   
-      const updateProgress = (progress: number) => {
-        this.fileTransfers = this.fileTransfers.map(t => 
-          t.id === transferId ? { ...t, progress, status: 'transferring' } : t
-        );
+      const updateProgress = (progress: number, bytesTransferred: number) => {
+        // Calculer la vitesse de transfert
+        const now = Date.now();
+        const timeSinceLastUpdate = now - lastUpdate;
+        
+        // Mise à jour de la vitesse toutes les 500ms
+        if (timeSinceLastUpdate >= 500) {
+          currentSpeed = bytesTransferredSinceLastUpdate / (timeSinceLastUpdate / 1000);
+          bytesTransferredSinceLastUpdate = 0;
+          lastUpdate = now;
+          
+          // Calculer le temps restant estimé
+          const totalTime = now - startTime;
+          const estimatedTotalTime = (file.size / (offset || 1)) * totalTime;
+          const estimatedTimeRemaining = Math.max(0, estimatedTotalTime - totalTime);
+          
+          // Mettre à jour le transfert avec les nouvelles informations
+          this.fileTransfers = this.fileTransfers.map(t => 
+            t.id === transferId ? { 
+              ...t, 
+              progress, 
+              status: 'transferring',
+              speed: currentSpeed,
+              estimatedTimeRemaining: estimatedTimeRemaining
+            } : t
+          );
+        } else {
+          // Simple mise à jour de la progression sans recalcul de la vitesse
+          bytesTransferredSinceLastUpdate += bytesTransferred;
+          this.fileTransfers = this.fileTransfers.map(t => 
+            t.id === transferId ? { ...t, progress, status: 'transferring' } : t
+          );
+        }
       };
   
       // Fonction pour lire une tranche du fichier
       const readSlice = async (o: number): Promise<boolean> => {
         return new Promise((resolve) => {
           try {
+            // Vérifier si le transfert a été annulé
+            const transferCanceled = !this.activeTransfers.has(transferId) || 
+                                     this.fileTransfers.some(t => t.id === transferId && t.status === 'canceled');
+            
+            if (transferCanceled) {
+              console.log(`Transfert ${transferId} annulé, arrêt de l'envoi des données`);
+              resolve(false);
+              return;
+            }
+
             const slice = file.slice(o, Math.min(o + chunkSize, file.size));
             reader.onload = async (e) => {
               if (!e.target?.result) {
@@ -507,6 +635,14 @@ export class FileTransferService {
               }
               
               try {
+                // Vérifier de nouveau si l'annulation est survenue pendant la lecture
+                if (!this.activeTransfers.has(transferId) || 
+                    this.fileTransfers.some(t => t.id === transferId && t.status === 'canceled')) {
+                  console.log(`Transfert ${transferId} annulé pendant la lecture, arrêt de l'envoi des données`);
+                  resolve(false);
+                  return;
+                }
+
                 // Notifier à quel fichier ce chunk appartient
                 const chunkInfo = JSON.stringify({ 
                   type: 'file-chunk', 
@@ -527,6 +663,14 @@ export class FileTransferService {
                 // Petit délai pour éviter la saturation
                 await new Promise(r => setTimeout(r, 5));
                 
+                // Vérifier encore une fois si le transfert a été annulé avant d'envoyer le chunk
+                if (!this.activeTransfers.has(transferId) || 
+                    this.fileTransfers.some(t => t.id === transferId && t.status === 'canceled')) {
+                  console.log(`Transfert ${transferId} annulé avant l'envoi du chunk, arrêt`);
+                  resolve(false);
+                  return;
+                }
+
                 // Envoyer les données avec réessais
                 const chunkSent = await this.sendWithRetry(
                   targetDeviceId, 
@@ -542,7 +686,7 @@ export class FileTransferService {
                 
                 offset += (e.target.result as ArrayBuffer).byteLength;
                 const progress = Math.min(100, Math.floor((offset / file.size) * 100));
-                updateProgress(progress);
+                updateProgress(progress, (e.target.result as ArrayBuffer).byteLength);
                 
                 // Succès pour ce chunk
                 resolve(true);
@@ -567,8 +711,24 @@ export class FileTransferService {
       
       // Envoyer tous les chunks avec gestion d'échec et de reprise
       while (offset < file.size) {
+        // Vérifier si le transfert a été annulé avant de lire le prochain chunk
+        const transferCanceled = !this.activeTransfers.has(transferId) || 
+                               this.fileTransfers.some(t => t.id === transferId && t.status === 'canceled');
+        
+        if (transferCanceled) {
+          console.log(`Transfert ${transferId} annulé, arrêt du processus d'envoi`);
+          break;
+        }
+
         const success = await readSlice(offset);
         if (!success) {
+          // Vérifier à nouveau si l'annulation est la cause de l'échec
+          if (!this.activeTransfers.has(transferId) || 
+              this.fileTransfers.some(t => t.id === transferId && t.status === 'canceled')) {
+            console.log(`Transfert ${transferId} annulé, pas de réessai`);
+            break;
+          }
+
           // Attendre un peu avant de réessayer le même chunk
           await new Promise(r => setTimeout(r, 1000));
           continue; // Réessayer le même chunk
@@ -580,20 +740,31 @@ export class FileTransferService {
         }
       }
       
-      // Transfert terminé avec succès
-      this.fileTransfers = this.fileTransfers.map(t => 
-        t.id === transferId ? { ...t, progress: 100, status: 'completed' } : t
-      );
+      // Vérifier si le transfert est toujours actif et non annulé avant de le marquer comme terminé
+      const transferCanceled = !this.activeTransfers.has(transferId) || 
+                             this.fileTransfers.some(t => t.id === transferId && t.status === 'canceled');
       
-      // Vibration de succès quand le transfert est terminé
-      vibrateSuccess();
+      if (!transferCanceled && offset >= file.size) {
+        // Transfert terminé avec succès
+        this.fileTransfers = this.fileTransfers.map(t => 
+          t.id === transferId ? { ...t, progress: 100, status: 'completed' } : t
+        );
+        
+        // Vibration de succès quand le transfert est terminé
+        vibrateSuccess();
+        
+        // Informer l'autre appareil que le transfert est terminé
+        await this.sendWithRetry(
+          targetDeviceId, 
+          JSON.stringify({ type: 'file-complete', id: transferId }), 
+          5 // Plus de tentatives pour s'assurer que le message de fin passe
+        );
+      } else if (transferCanceled) {
+        console.log(`Le transfert ${transferId} a été annulé, ne pas envoyer de signal de complétion`);
+      }
       
-      // Informer l'autre appareil que le transfert est terminé
-      await this.sendWithRetry(
-        targetDeviceId, 
-        JSON.stringify({ type: 'file-complete', id: transferId }), 
-        5 // Plus de tentatives pour s'assurer que le message de fin passe
-      );
+      // Nettoyage des ressources
+      this.activeTransfers.delete(transferId);
       
     } catch (error) {
       console.error('Error sending file:', error);
@@ -603,6 +774,9 @@ export class FileTransferService {
       this.fileTransfers = this.fileTransfers.map(t => 
         t.id === transferId ? { ...t, status: 'failed' } : t
       );
+      
+      // Nettoyage des ressources
+      this.activeTransfers.delete(transferId);
     }
   }
   
@@ -650,5 +824,54 @@ export class FileTransferService {
       }
       return file;
     });
+  }
+
+  // Annuler un transfert de fichier en cours
+  cancelFileTransfer(transferId: string): boolean {
+    // Vérifier si le transfert existe
+    const transferIndex = this.fileTransfers.findIndex(t => t.id === transferId);
+    if (transferIndex === -1) {
+      console.warn(`Transfert ${transferId} non trouvé pour annulation`);
+      return false;
+    }
+
+    const transfer = this.fileTransfers[transferIndex];
+    
+    // Vérifier si le transfert est annulable (en cours ou en attente)
+    if (transfer.status !== 'transferring' && transfer.status !== 'pending') {
+      console.warn(`Transfert ${transferId} ne peut pas être annulé (statut: ${transfer.status})`);
+      return false;
+    }
+
+    // Notifier l'autre appareil de l'annulation
+    if (transfer.targetDevice) {
+      try {
+        console.log(`Envoi notification d'annulation pour ${transferId} à ${transfer.targetDevice}`);
+        this.peerService.sendData(
+          transfer.targetDevice,
+          JSON.stringify({ 
+            type: 'file-canceled', 
+            id: transferId,
+            name: transfer.fileName
+          })
+        );
+      } catch (error) {
+        console.error('Erreur lors de la notification d\'annulation:', error);
+        // Continuer quand même avec l'annulation locale
+      }
+    }
+
+    // Supprimer le transfert de la liste des transferts actifs
+    this.activeTransfers.delete(transferId);
+
+    // Mettre à jour le statut du transfert
+    vibrateError(); // Vibration d'erreur pour indiquer l'annulation
+    
+    this.fileTransfers = this.fileTransfers.map(t => 
+      t.id === transferId ? { ...t, status: 'canceled' } : t
+    );
+
+    console.log(`Transfert ${transferId} annulé avec succès`);
+    return true;
   }
 } 

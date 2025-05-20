@@ -29,6 +29,7 @@ export class PeerConnectionService {
   private deviceName: string;
   private connectionAttempts: Record<string, number> = {}; // Compte les tentatives de connexion
   private maxRetries = 2; // Nombre maximum de tentatives
+  private deviceNames: Record<string, string> = {}; // Map des IDs d'appareils vers leurs noms
 
   constructor(
     socket: any,
@@ -40,6 +41,20 @@ export class PeerConnectionService {
     this.deviceName = deviceName;
     this.connectedDevicesCallback = connectedDevicesCallback;
     this.dataCallback = dataCallback;
+    
+    // Écouter les mises à jour de la liste des appareils pour stocker leurs noms
+    if (socket) {
+      socket.on('devices:list', (devices: Device[]) => {
+        devices.forEach(device => {
+          this.deviceNames[device.id] = device.name;
+        });
+      });
+    }
+  }
+
+  // Récupérer le nom d'un appareil à partir de son ID
+  getDeviceName(deviceId: string): string {
+    return this.deviceNames[deviceId] || 'Appareil inconnu';
   }
 
   // Mise à jour du nom de l'appareil

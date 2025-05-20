@@ -2,10 +2,23 @@ import { useConnection } from '../hooks/useConnection';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Send, ArrowUpDown } from 'lucide-react';
+import { Send, ArrowUpDown, XCircle, X, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { vibrateMedium } from '../utils/vibration';
+import type { FileTransfer } from '../types/connection.types';
+import { useEffect, useState } from 'react';
 
 export const TransferList = () => {
-  const { fileTransfers } = useConnection();
+  const { fileTransfers, cancelFileTransfer } = useConnection();
+  const [now, setNow] = useState<number>(Date.now());
+  
+  // Mettre à jour le temps actuel toutes les secondes pour les estimations
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
   
   if (fileTransfers.length === 0) {
     return (
@@ -35,6 +48,52 @@ export const TransferList = () => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
   };
 
+  const formatDate = (timestamp: number): string => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('fr-FR', { 
+      day: '2-digit', 
+      month: '2-digit',
+      hour: '2-digit', 
+      minute: '2-digit'
+    });
+  };
+  
+  const formatTimeRemaining = (ms?: number): string => {
+    if (!ms) return '...';
+    
+    // Convertir les millisecondes en secondes
+    const seconds = Math.floor(ms / 1000);
+    
+    if (seconds < 60) {
+      return `${seconds}s`;
+    } else if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return `${minutes}m ${remainingSeconds}s`;
+    } else {
+      const hours = Math.floor(seconds / 3600);
+      const remainingMinutes = Math.floor((seconds % 3600) / 60);
+      return `${hours}h ${remainingMinutes}m`;
+    }
+  };
+  
+  const formatSpeed = (bytesPerSecond?: number): string => {
+    if (!bytesPerSecond) return '';
+    
+    if (bytesPerSecond < 1024) {
+      return `${bytesPerSecond.toFixed(0)} o/s`;
+    } else if (bytesPerSecond < 1024 * 1024) {
+      return `${(bytesPerSecond / 1024).toFixed(1)} Ko/s`;
+    } else {
+      return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} Mo/s`;
+    }
+  };
+
+  const handleCancelTransfer = (transferId: string) => {
+    vibrateMedium();
+    cancelFileTransfer(transferId);
+  };
+
   const getStatusBadge = (status: string) => {
     switch(status) {
       case 'completed':
@@ -43,11 +102,17 @@ export const TransferList = () => {
         return <Badge variant="destructive">Échec</Badge>;
       case 'pending':
         return <Badge variant="secondary">En attente</Badge>;
+      case 'canceled':
+        return <Badge variant="canceled">Annulé</Badge>;
       default:
         return <Badge variant="outline">Envoi</Badge>;
     }
   };
   
+  const showProgressBar = (transfer: FileTransfer): boolean => {
+    return transfer.status !== 'canceled' && transfer.status !== 'failed' && transfer.status !== 'completed';
+  };
+
   return (
     <Card>
       {/* <CardHeader>
@@ -63,29 +128,57 @@ export const TransferList = () => {
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <div className="font-medium">{transfer.fileName}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {formatSize(transfer.fileSize)}
+                  <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
+                    <div>{formatSize(transfer.fileSize)}</div>
+                    <div className="text-xs">À: {transfer.targetDeviceName || 'Appareil inconnu'}</div>
+                    <div className="text-xs">Le: {formatDate(transfer.timestamp)}</div>
                   </div>
                 </div>
-                <div>
+                <div className="flex items-center gap-2">
+                  {(transfer.status === 'transferring' || transfer.status === 'pending') && (
+                    <Button
+                      variant="ghost" 
+                      size="sm"
+                      className="hover:bg-red-50 transition-colors flex items-center gap-1.5"
+                      onClick={() => handleCancelTransfer(transfer.id)}
+                      title="Annuler le transfert"
+                    >
+                      <span className="text-xs">Annuler</span>
+                    </Button>
+                  )}
                   {getStatusBadge(transfer.status)}
                 </div>
               </div>
               
-              <div className="space-y-1">
-                <Progress 
-                  value={transfer.progress} 
-                  className="h-2" 
-                  animated={transfer.status === 'transferring'} 
-                />
-                <div className="flex justify-end text-xs text-muted-foreground">
-                  {transfer.status === 'completed' 
-                    ? 'Terminé' 
-                    : transfer.status === 'failed'
-                      ? 'Échec'
-                      : `${transfer.progress}%`}
+              {showProgressBar(transfer) && (
+                <div className="space-y-1">
+                  <Progress 
+                    value={transfer.progress} 
+                    className="h-2" 
+                    animated={transfer.status === 'transferring'} 
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      {transfer.status === 'transferring' && transfer.estimatedTimeRemaining && (
+                        <>
+                          <Clock className="h-3 w-3" />
+                          <span>{formatTimeRemaining(transfer.estimatedTimeRemaining)}</span>
+                          {transfer.speed && <span className="ml-2">{formatSpeed(transfer.speed)}</span>}
+                        </>
+                      )}
+                    </div>
+                    <div>
+                      {transfer.status === 'completed' 
+                        ? 'Terminé' 
+                        : transfer.status === 'failed'
+                          ? 'Échec'
+                          : transfer.status === 'canceled'
+                            ? 'Annulé'
+                            : `${transfer.progress}%`}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </li>
           ))}
         </ul>

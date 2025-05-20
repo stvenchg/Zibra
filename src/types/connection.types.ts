@@ -13,8 +13,12 @@ export interface FileTransfer {
   fileName: string;
   fileSize: number;
   progress: number;
-  status: 'pending' | 'transferring' | 'completed' | 'failed';
+  status: 'pending' | 'transferring' | 'completed' | 'failed' | 'canceled';
   targetDevice?: string; // ID of the device receiving the file
+  targetDeviceName?: string; // Nom de l'appareil destinataire
+  timestamp: number; // Horodatage de début du transfert
+  estimatedTimeRemaining?: number; // Temps restant estimé en millisecondes
+  speed?: number; // Vitesse de transfert en octets par seconde
 }
 
 export interface IncomingFile {
@@ -23,9 +27,12 @@ export interface IncomingFile {
   size: number;
   receivedSize: number;
   progress: number;
-  status: 'receiving' | 'completed' | 'failed';
+  status: 'receiving' | 'completed' | 'failed' | 'canceled';
   chunks: ArrayBuffer[];
   from: string;
+  timestamp: number; // Horodatage de début de réception
+  estimatedTimeRemaining?: number; // Temps restant estimé en millisecondes
+  speed?: number; // Vitesse de réception en octets par seconde
 }
 
 export interface SelectedFile {
@@ -59,4 +66,5 @@ export interface ConnectionContextType {
   removeSelectedFile: (fileId: string) => void;
   clearSelectedFiles: () => void;
   getServices: () => ConnectionServices;
+  cancelFileTransfer: (transferId: string) => void;
 } 

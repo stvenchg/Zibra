@@ -243,6 +243,15 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Annuler un transfert de fichier
+  const cancelFileTransfer = (transferId: string) => {
+    if (fileTransferServiceRef.current) {
+      fileTransferServiceRef.current.cancelFileTransfer(transferId);
+      // Mettre à jour l'état avec les données du service
+      setFileTransfers(fileTransferServiceRef.current.getFileTransfers());
+    }
+  };
+
   // Synchroniser les états avec les services
   useEffect(() => {
     const updateInterval = setInterval(() => {
@@ -288,7 +297,8 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     addSelectedFile,
     removeSelectedFile,
     clearSelectedFiles,
-    getServices
+    getServices,
+    cancelFileTransfer
   };
 
   return (
