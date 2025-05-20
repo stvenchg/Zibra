@@ -43,6 +43,17 @@ const getLocalIPs = () => {
   return addresses;
 };
 
+// Fonction pour déterminer si deux adresses IP sont sur le même sous-réseau (classe C)
+const isSameSubnet = (ip1, ip2) => {
+  if (!ip1 || !ip2) return false;
+  
+  // Extraire les 3 premiers octets pour une comparaison de classe C
+  const subnet1 = ip1.split('.').slice(0, 3).join('.');
+  const subnet2 = ip2.split('.').slice(0, 3).join('.');
+  
+  return subnet1 === subnet2;
+};
+
 // Log local IP addresses
 const localIPs = getLocalIPs();
 console.log('Local network interfaces:', localIPs);
@@ -51,6 +62,10 @@ console.log('Local network interfaces:', localIPs);
 io.on('connection', (socket) => {
   console.log(`New connection: ${socket.id}`);
   
+  // Récupérer l'adresse IP du client
+  const clientIP = socket.handshake.address.replace(/^::ffff:/, '');
+  console.log(`Client IP: ${clientIP}`);
+  
   // Store pending ICE candidates for this socket
   if (!pendingIceCandidates.has(socket.id)) {
     pendingIceCandidates.set(socket.id, new Map());
@@ -58,13 +73,42 @@ io.on('connection', (socket) => {
   
   // Device announcement
   socket.on('device:announce', ({ name }) => {
-    connectedDevices.set(socket.id, { id: socket.id, name });
+    connectedDevices.set(socket.id, { 
+      id: socket.id, 
+      name,
+      ip: clientIP
+    });
     
-    // Broadcast updated device list to all clients
-    io.emit('devices:list', Array.from(connectedDevices.values()));
+    // Envoi de la liste des appareils adaptée à chaque client
+    sendFilteredDevicesList();
     
-    console.log(`Device announced: ${name} (${socket.id})`);
+    console.log(`Device announced: ${name} (${socket.id}) from IP ${clientIP}`);
   });
+  
+  // Function pour envoyer une liste d'appareils filtrée à chaque client
+  const sendFilteredDevicesList = () => {
+    // Envoyer une liste d'appareils personnalisée à chaque client
+    for (const [socketId, deviceInfo] of connectedDevices.entries()) {
+      const deviceList = [];
+      
+      // Pour chaque appareil connecté
+      for (const [id, device] of connectedDevices.entries()) {
+        // Ne pas inclure l'appareil lui-même dans sa liste
+        if (id !== socketId) {
+          // Si le dispositif est sur le même sous-réseau, l'ajouter à la liste
+          if (isSameSubnet(deviceInfo.ip, device.ip)) {
+            deviceList.push({
+              id: device.id,
+              name: device.name
+            });
+          }
+        }
+      }
+      
+      // Envoyer la liste filtrée à cet appareil spécifique
+      io.to(socketId).emit('devices:list', deviceList);
+    }
+  };
   
   // WebRTC Signaling
   socket.on('signal:offer', ({ to, signal }) => {
@@ -139,8 +183,8 @@ io.on('connection', (socket) => {
     connectedDevices.delete(socket.id);
     pendingIceCandidates.delete(socket.id);
     
-    // Broadcast updated device list
-    io.emit('devices:list', Array.from(connectedDevices.values()));
+    // Envoyer la liste mise à jour à tous les clients
+    sendFilteredDevicesList();
   });
 });
 
@@ -155,6 +199,7 @@ app.get('/debug/devices', (req, res) => {
     devices: Array.from(connectedDevices.entries()).map(([id, device]) => ({
       id,
       name: device.name,
+      ip: device.ip,
       pendingIceCandidates: pendingIceCandidates.has(id) ? 
         Array.from(pendingIceCandidates.get(id).entries()).map(([target, candidates]) => ({
           target,
