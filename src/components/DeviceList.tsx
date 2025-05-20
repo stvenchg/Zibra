@@ -123,7 +123,7 @@ export const DeviceList = () => {
         </CardHeader>
         <CardContent className="text-center py-8 space-y-4">
           <div className="flex justify-center">
-            <div className="p-6 rounded-full bg-muted/20 animate-pulse-expand relative">
+            <div className="p-4 rounded-full bg-muted/20 animate-pulse-expand relative">
               <div className="absolute inset-0 rounded-full bg-primary/10 animate-pulse opacity-75"></div>
               <Wifi className="h-10 w-10 text-muted-foreground" />
             </div>

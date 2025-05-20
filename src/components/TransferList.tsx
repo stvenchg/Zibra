@@ -17,7 +17,7 @@ export const TransferList = () => {
         <CardContent className="text-center py-8 space-y-4">
           <div className="flex justify-center">
             <div className="p-4 rounded-full bg-muted/50">
-              <ArrowUpDown className="h-10 w-10 text-muted-foreground" />
+              <ArrowUpDown className="h-10 w-10 text-muted-foreground/70" />
             </div>
           </div>
           <p className="text-muted-foreground">Aucun transfert</p>

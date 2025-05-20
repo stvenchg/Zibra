@@ -237,7 +237,9 @@ export const FileSelection = () => {
             onDrop={handleDrop}
           >
             <div className="flex flex-col items-center gap-3">
-              <Upload className="h-12 w-12 text-muted-foreground/70" />
+              <div className="p-4 rounded-full bg-muted/50">
+                <Upload className="h-10 w-10 text-muted-foreground/70" />
+              </div>
               <p className="text-muted-foreground">Glissez et déposez vos fichiers ici</p>
               <p className="text-xs text-muted-foreground">ou</p>
               <Button
