@@ -31,7 +31,7 @@ export const Header = () => {
   // Function to handle click on the About button
   const handleInfoClick = () => {
     vibrateLight(); // Light vibration
-    alert('Zibra - WebRTC File Sharing Application\nDeveloped with React, TypeScript and TailwindCSS\n\nMade with ❤️ by Steven Ching');
+    alert('Zibra - Fast & Secure Local Network File Transfer\nDeveloped with React, TypeScript and TailwindCSS\n\nMade with ❤️ by Steven Ching');
   };
 
   return (

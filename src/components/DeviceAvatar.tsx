@@ -51,12 +51,21 @@ export const DeviceAvatar = ({
     }
   }, [deviceId, deviceName, style, useNameAsSeed, currentDeviceName]);
   
+  // Generate a descriptive alt text for better accessibility and SEO
+  const altText = deviceName 
+    ? `Avatar for ${deviceName}` 
+    : deviceId 
+      ? `Device avatar for ID ${deviceId.substring(0, 8)}` 
+      : `Device avatar`;
+  
   if (!avatar) {
     // Display a placeholder during loading
     return (
       <div 
         className={`bg-muted rounded-full flex items-center justify-center ${className}`}
         style={{ width: size, height: size }}
+        aria-label={altText}
+        role="img"
       >
         <span className="text-xs text-muted-foreground">...</span>
       </div>
@@ -66,7 +75,7 @@ export const DeviceAvatar = ({
   return (
     <img
       src={avatar}
-      alt="Device avatar"
+      alt={altText}
       className={`rounded-full ${className}`}
       style={{ width: size, height: size }}
     />

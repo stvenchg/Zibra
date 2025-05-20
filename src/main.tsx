@@ -15,6 +15,19 @@ window.process.nextTick = function(fn: Function, ...args: any[]) {
   }
 })();
 
+// Register service worker for offline support and better performance
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+      })
+      .catch(error => {
+        console.log('ServiceWorker registration failed: ', error);
+      });
+  });
+}
+
 // Polyfills - MUST be imported before any other code
 import 'buffer';
 import './wrtc-polyfills'; // New WebRTC-specific polyfills

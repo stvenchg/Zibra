@@ -1,0 +1,16 @@
+{
+  "name": "Zibra - Fast & Secure Local Network File Transfer",
+  "short_name": "Zibra",
+  "description": "Transfer files directly between devices on your local network with Zibra. No cloud storage, no file size limits.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4361ee",
+  "icons": [
+    {
+      "src": "/zibra-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+} 

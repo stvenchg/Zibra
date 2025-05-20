@@ -4,7 +4,56 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/zibra-ico.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zibra - Local Network File Transfer</title>
+    
+    <!-- PWA Support -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/zibra-icon-192.png" />
+    
+    <!-- SEO Meta Tags -->
+    <title>Zibra - Fast & Secure Local Network File Transfer</title>
+    <meta name="description" content="Transfer files directly between devices on your local network with Zibra. No cloud storage, no file size limits, completely peer-to-peer." />
+    <meta name="keywords" content="file transfer, p2p file sharing, WebRTC, peer-to-peer, local network sharing" />
+    <meta name="author" content="Steven Ching" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://zibra.vercel.app/" />
+    <meta property="og:title" content="Zibra - Fast & Secure Local Network File Transfer" />
+    <meta property="og:description" content="Transfer files directly between devices on your local network with Zibra. No cloud storage, no file size limits, completely peer-to-peer." />
+    <meta property="og:image" content="https://zibra.vercel.app/zibra-social.png" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://zibra.vercel.app/" />
+    <meta property="twitter:title" content="Zibra - Fast & Secure Local Network File Transfer" />
+    <meta property="twitter:description" content="Transfer files directly between devices on your local network with Zibra. No cloud storage, no file size limits, completely peer-to-peer." />
+    <meta property="twitter:image" content="https://zibra.vercel.app/zibra-social.png" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://zibra.vercel.app/" />
+    
+    <!-- Theme and Color Scheme -->
+    <meta name="theme-color" content="#4361ee" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Zibra",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "description": "A modern, web-based file transfer application that leverages WebRTC for direct peer-to-peer file sharing within your local network."
+    }
+    </script>
+    
     <script>
       // Theme initialization
       (function() {
